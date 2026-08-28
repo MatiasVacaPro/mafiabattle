@@ -915,9 +915,26 @@ def bucle_anti_inactividad():
                     pg.click(COORD_IDLE_RELOAD_BTN)
                     sleep(2.0)
                     pg.press('enter')
-                    log_msg("Anti-Inactividad", "espera", "Esperando 8s para recarga de la página...")
-                    sleep(8.0)
-                    log_msg("Anti-Inactividad", "completado", "Página recargada. Reanudando monitoreo.")
+                    
+                    log_msg("Anti-Inactividad", "espera", "Esperando 6s para carga inicial del juego...")
+                    sleep(6.0)
+                    
+                    # Secuencia de restauración para asegurar la pantalla principal de la ciudad
+                    log_msg("Anti-Inactividad", "ejecutando", "Ejecutando secuencia de login y retorno a pantalla principal...")
+                    pg.press('enter')
+                    sleep(3.0)
+                    pg.press('enter')
+                    sleep(2.0)
+                    
+                    # Cerrar posibles popups de bienvenida/recompensas
+                    pg.press('escape')
+                    sleep(0.8)
+                    pg.press('escape')
+                    sleep(0.8)
+                    pg.press('escape')
+                    sleep(0.5)
+                    
+                    log_msg("Anti-Inactividad", "completado", "✅ Pantalla principal de la ciudad restaurada con éxito.")
 
         except Exception as e:
             log_msg("Anti-Inactividad", "error", f"Error en detector: {e}")
