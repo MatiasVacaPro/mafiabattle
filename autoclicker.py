@@ -36,7 +36,7 @@ ACTIVO_RULETA             = True   # Ruleta - Sin temporizador (Ejecución cada 
 ACTIVO_MAYOR_MENOR        = True   # Mayor o Menor (Higher/Lower) - Sin temporizador (Ejecución cada 30 minutos)
 ACTIVO_MAS_VIDA           = True   # Más vida - Sin temporizador (Ejecución dinámica según temporizadores activos)
 ACTIVO_RECOLECTOR_PIEDRAS = True  # Recolector de piedras preciosas - Sin temporizador (Ejecución cada 3 horas)
-ACTIVO_ANTI_INACTIVIDAD   = True   # Recarga anti-inactividad - cmd+r y Enter cada 4 horas
+ACTIVO_ANTI_INACTIVIDAD   = True   # Auto-Reload OCR Vision - Detección a ~1 FPS y pulsación de RELOAD inmediata
 
 
 # ---- Configuración del módulo GYM ----s
@@ -872,21 +872,58 @@ def bucle_recolector_piedras():
             log_msg("Recolector Piedras", "completado", "Secuencia completada.")
 
 
+# =====================================================================
+# MONITOR ANTI-INACTIVIDAD INTELIGENTE (OCR VISION A 1 FPS)
+# =====================================================================
+COORD_IDLE_RELOAD_BTN  = (837, 689)
+REGION_IDLE_RELOAD_BTN = (745, 660, 185, 60)
+
+
 def bucle_anti_inactividad():
-    """Bucle Anti-Inactividad: Recarga la página cada 4 horas con cmd+r y Enter tras 2s."""
+    """
+    Bucle Anti-Inactividad Inteligente (Vision OCR ~1 FPS):
+    Monitorea de forma ultraligera el área de 'Idle too long' y presiona
+    automáticamente el botón RELOAD en cuanto aparece el aviso.
+    """
+    log_msg("Anti-Inactividad", "activo", "Monitor OCR activo (~1 FPS) para detectar 'Idle too long' / RELOAD...")
     while True:
-        log_msg("Anti-Inactividad", "espera", "Iniciando espera de 4 horas (14400s) antes de recargar...")
-        sleep(14400)
-        log_msg("Anti-Inactividad", "espera", "Esperando turno...")
-        with action_lock:
-            sleep(1.5)
-            log_msg("Anti-Inactividad", "ejecutando", "Ejecutando recarga (cmd+r)...")
-            pg.hotkey('command', 'r')
-            sleep(2)
-            log_msg("Anti-Inactividad", "ejecutando", "Presionando Enter...")
-            pg.press('enter')
-            sleep(1)
-            log_msg("Anti-Inactividad", "completado", "Recarga completada.")
+        try:
+            # Capturar la pequeña región del botón RELOAD (185x60 px)
+            screenshot = pg.screenshot(region=REGION_IDLE_RELOAD_BTN)
+            texto = ""
+            if VISION_DISPONIBLE:
+                buf = io.BytesIO()
+                screenshot.save(buf, format="PNG")
+                data = Foundation.NSData.dataWithBytes_length_(buf.getvalue(), len(buf.getvalue()))
+                handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(data, None)
+                request = Vision.VNRecognizeTextRequest.alloc().init()
+                request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelFast)
+                request.setUsesLanguageCorrection_(False)
+                success, _ = handler.performRequests_error_([request], None)
+                if success:
+                    results = request.results()
+                    parts = [c.string() for obs in results for c in obs.topCandidates_(1)]
+                    texto = " ".join(parts).upper()
+            elif TESSERACT_DISPONIBLE:
+                texto = pytesseract.image_to_string(screenshot).strip().upper()
+
+            # Si detecta la palabra RELOAD o IDLE
+            if "RELOAD" in texto or "IDLE" in texto:
+                log_msg("Anti-Inactividad", "alerta", f"⚠️ Detectado aviso de inactividad ('{texto.strip()}').")
+                with action_lock:
+                    log_msg("Anti-Inactividad", "ejecutando", f"Pulsando botón RELOAD en {COORD_IDLE_RELOAD_BTN}...")
+                    pg.click(COORD_IDLE_RELOAD_BTN)
+                    sleep(2.0)
+                    pg.press('enter')
+                    log_msg("Anti-Inactividad", "espera", "Esperando 8s para recarga de la página...")
+                    sleep(8.0)
+                    log_msg("Anti-Inactividad", "completado", "Página recargada. Reanudando monitoreo.")
+
+        except Exception as e:
+            log_msg("Anti-Inactividad", "error", f"Error en detector: {e}")
+
+        # Tasa de refresco a ~1 FPS (1 segundo de espera entre escaneos ligeros)
+        sleep(1.0)
 
 
 def bucle_fabricacion_cristal():
