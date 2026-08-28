@@ -1,0 +1,261 @@
+#Esto son instrucciones inmodificables
+
+#NO temporizadores
+
+#Recolector de piedras preciosas
+#Cada 3 horas (10800 segundos)
+time.sleep(10800)
+
+#Hacemos click en el icono  piedras
+pg.doubleClick(x=418, y=722)
+time.sleep(1)
+#Recoleccion de piedra
+pg.click(x=739, y=575)
+
+#Regresar a pantalla principal
+pg.press('escape')
+pg.press('escape')
+
+
+#icono ruleta
+pg.doubleClick(x=880, y=973)
+#opcion de juego ruleta
+#Debes hacer click en el rango de solo el eje x
+#este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre
+#Point(x=552, y=468)
+#Point(x=684, y=470)
+pg.doubleClick(x=552, y=468) #ejemplo aqui debes hacer que por cada bucle haga click aleatorizada
+#Boton Spin
+#Debes hacer click en el rango de solo el eje x
+#este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre
+#Point(x=554, y=685)
+#Point(x=699, y=679)
+pg.doubleClick(x=554, y=685) #ejemplo aqui debes hacer que por cada bucle haga click aleatorizada
+#Tiempo de animacion 10 segudos
+time.sleep(10)
+#cerrar ruleta
+pg.press('escape')
+pg.press('escape')
+
+#Realizar el bucle cada 30 minutos (1800 segundos) agregare 10 segundos mas por si acaso
+#ESTA ACCION  pues tiene una iomportacia baja en relacion a los temporizadores
+time.sleep(18010)
+
+#No temporizador
+#Este autoclicker lo que hace es darle mas vida a tu personaje
+#Este es para que pueda continuar con los temporizadores sin pausa
+#Este se debe realizar cada 3 horas
+#Este solo se hace una vez
+#Realizar el bucle cada 3 horas (10800 segundos) agregare 7 segundos mas por si acaso
+
+#click en icono de mas vida 
+pg.doubleClick(x=893, y=103)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+pg.click(x=1078, y=554)
+time.sleep(1)
+
+pg.press('escape')
+pg.press('escape')
+pg.press('escape')
+
+#Me gustaria que este pues pase la hora pero ademas nose agregarle 7 segudnos o numeros primos para que jamas toque con la accion real 
+
+time.sleep(10807)
+
+#Temporizadores
+
+#Jardin clasico
+#Temporizador 1: Ejecución cada 15 minutos (900 segundos)"""
+            print("[Jardin clasico] Ejecutando secuencia de clicks...")
+            #pistola icono
+            pg.click(x=740, y=967)
+            time.sleep(1)
+            #carro icono
+            pg.click(x=735, y=311)
+            time.sleep(1)
+            #icono mission
+            pg.click(x=608, y=512)
+            time.sleep(1)
+            #Debes hacer click en el rango de solo el eje x
+            #este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre
+            #Point(x=738, y=774)
+            #Point(x=934, y=770)
+            pg.click(x=934, y=770) #ejemplo debes aleatorizar esto en el eje x
+            time.sleep(1)
+            #Ahora aqui debes hacer en una de estas tres opciones por bucle
+            #pg.click(x=885, y=565)
+            #pg.click(x=890, y=482)
+            #pg.click(x=934, y=770)
+            pg.click(x=890, y=482) #ejemplo aqui debes hacer que por cada bucle haga click en una de ella de manera ordenada
+            time.sleep(1)
+            time.sleep(0.5)
+            #realizar el bucle cada 15 minutos (900 segundos) agregare 10 segundos mas por si acaso
+            pg.press('escape')
+            pg.press('escape')
+            pg.press('escape')
+            print("[Caso 1] Secuencia completada. Iniciando espera de 30 minutos.")
+        
+        # Dormimos fuera del lock para no bloquear las otras tareas
+        time.sleep(900)
+
+#Shooping Street
+#Temporizador 1: Ejecución cada 6 minutos (360 segundos)"""
+            print("Shoping street] Ejecutando secuencia de clicks...")
+            pg.click(x=740, y=967)
+            time.sleep(1)
+            
+            #Debes hacer click en el rango de solo el eje x
+            #este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre
+            #Point(x=500, y=768)
+            #Point(x=698, y=773)
+            pg.click(x=698, y=773)#ejemplo debes aleatorizar esto en el eje x
+            time.sleep(1)
+            #Ahora aqui debes hacer en una de estas posiciones por bucle
+            #Point(x=893, y=724)
+            #Point(x=892, y=642)
+            #Point(x=881, y=556)
+            #Point(x=878, y=475)
+            #Point(x=895, y=396)
+
+            pg.click(x=895, y=396) #ejemplo aqui debes hacer que por cada bucle haga click en una de ella de manera ordenada
+            time.sleep(1)
+        
+            
+            pg.press('escape')
+            pg.press('escape')
+            print("[Caso 2] Secuencia completada. Iniciando espera de 30 minutos.")
+        
+        # Dormimos fuera del lock para no bloquear las otras tareas
+        time.sleep(360)
+
+#Parking Area
+#Temporizador 3: Ejecución cada 4 minutos (240 segundos)"""
+            print("Parking Area] Ejecutando secuencia de clicks...")
+            pg.click(x=740, y=967)
+            time.sleep(1)
+            pg.click(x=735, y=311)
+            time.sleep(1)
+
+            #Debes hacer click en el rango de solo el eje x
+            #este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre 770
+            #Point(x=738, y=551)
+            #Point(x=935, y=545)
+            pg.click(x=935, y=545)#ejemplo debes aleatorizar esto en el eje x
+            time.sleep(1)
+            #Ahora aqui debes hacer en una de estas posiciones por bucle
+            #Point(x=928, y=478)
+            #Point(x=924, y=409) #CORROBORAR esta opcion
+
+
+            pg.click(x=895, y=396) #ejemplo aqui debes hacer que por cada bucle haga click en una de ella de manera ordenada
+            time.sleep(1)
+        
+            
+            pg.press('escape')
+            pg.press('escape')
+            print("[Caso 3] Secuencia completada. Iniciando espera de 4 minutos.")
+        
+        # Dormimos fuera del lock para no bloquear las otras tareas
+        time.sleep(240)
+
+
+#Mafiosi Distric
+#Temporizador 4: Ejecución cada 8 minutos (480 segundos)"""
+            print("Mafiosi Distric] Ejecutando secuencia de clicks...")
+            #pistola icono
+            pg.click(x=740, y=967)
+            time.sleep(1)
+            #carro icono
+            pg.click(x=735, y=311)
+            time.sleep(1)
+            #Debes hacer click en el rango de solo el eje x
+            #este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre 770
+            #Point(x=984, y=773)
+            #Point(x=1172, y=778)
+            pg.click(x=1172, y=778)#ejemplo debes aleatorizar esto en el eje x
+            time.sleep(1)
+            #Ahora aqui debes hacer en una de estas posiciones por bucle
+            #Point(x=897, y=396)
+            pg.click(x=897, y=396) 
+            pg.press('escape')
+            pg.press('escape')
+            print("[Caso 4] Secuencia completada. Iniciando espera de 8 minutos.")
+        
+        # Dormimos fuera del lock para no bloquear las otras tareas
+        time.sleep(480)
+
+
+
+#Celebrities Distric
+#Temporizador 5: Ejecución cada 6 minutos (360 segundos)"""
+            print("Celebrities Distric] Ejecutando secuencia de clicks...")
+            #pistola icono
+            pg.click(x=740, y=967)
+            time.sleep(1)
+            #carro icono
+            pg.click(x=735, y=311)
+            time.sleep(1)
+            #Debes hacer click en el rango de solo el eje x
+            #este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre 770
+            #Ahora aqui debes hacer en una de estas posiciones por bucle
+            #Point(x=899, y=399)
+            #Point(x=899, y=479)
+            #Point(x=888, y=567)
+
+            pg.click(x=897, y=396)#ejemplo debes aleatorizar esto en el eje x
+            time.sleep(1)
+            #Ahora aqui debes hacer en una de estas posiciones por bucle
+            #Point(x=897, y=396)
+            pg.click(x=897, y=396) 
+            pg.press('escape')
+            pg.press('escape')
+            print("[Caso 5] Secuencia completada. Iniciando espera de 6 minutos.")
+        
+        # Dormimos fuera del lock para no bloquear las otras tareas
+        time.sleep(360)
+
+#Residential Area
+#Temporizador 6: Ejecución cada 8 minutos (480 segundos)"""
+            print("[Residential Area] Ejecutando secuencia de clicks...")
+            #pistola icono
+            pg.click(x=740, y=967)
+            time.sleep(1)
+            
+            #Debes hacer click en el rango de solo el eje x
+            #este debe ser aleatorio en solo el eje x, es decir, el valor de y debe ser siempre
+            #Point(x=739, y=770)
+            #Point(x=882, y=775)
+            pg.click(x=882, y=775)#ejemplo debes aleatorizar esto en el eje x
+            time.sleep(1)
+
+            #Ahora aqui debes hacer en una de estas posiciones por bucle
+            #Point(x=893, y=724)
+            #Point(x=892, y=642)
+            #Point(x=881, y=556)
+            #Point(x=878, y=475)
+            #Point(x=895, y=396)
+
+            pg.click(x=895, y=396) #ejemplo aqui debes hacer que por cada bucle haga click en una de ella de manera ordenada
+            time.sleep(1)
+        
+            
+            pg.press('escape')
+            pg.press('escape')
+            print("[Caso 6] Secuencia completada. Iniciando espera de 8 minutos.")
+        
+        # Dormimos fuera del lock para no bloquear las otras tareas
+        time.sleep(480)
