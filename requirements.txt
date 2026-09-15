@@ -1,0 +1,24 @@
+# =====================================================================
+# Dependencias de MafiaBattle Autoclicker & OCR Bot (macOS)
+# =====================================================================
+
+# Automatización de mouse, teclado y pantalla
+pyautogui>=0.9.54
+pillow>=10.0.0
+pynput>=1.8.0
+
+# Frameworks nativos de macOS (PyObjC) para captura y OCR nativo Apple Vision
+pyobjc-core>=10.0
+pyobjc-framework-ApplicationServices>=10.0
+pyobjc-framework-Cocoa>=10.0
+pyobjc-framework-Quartz>=10.0
+pyobjc-framework-Vision>=10.0
+pyobjc-framework-CoreML>=10.0
+pyobjc-framework-CoreText>=10.0
+rubicon-objc>=0.5.0
+
+# Navegación y utilidades web
+selenium>=4.20.0
+
+# OCR de respaldo opcional
+pytesseract>=0.3.10

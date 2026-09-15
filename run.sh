@@ -1,12 +1,17 @@
-#!/bin/bash
-# Script para iniciar el autoclicker usando el entorno virtual correcto y sin buffering
+#!/usr/bin/env bash
+# =====================================================================
+# Script de Inicio - MafiaBattle Autoclicker
+# =====================================================================
 
-# Obtener la ruta absoluta del directorio del script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Ir al directorio del script
 cd "$DIR"
 
-# Ejecutar el script usando el Python del entorno virtual con -u (unbuffered)
+# Auto-despliegue si el entorno virtual aún no existe
+if [ ! -f "./venv/bin/python" ]; then
+    echo "⚠️  Entorno virtual no detectado. Ejecutando setup.sh automáticamente..."
+    bash ./setup.sh
+fi
+
+# Ejecutar el script principal con Python en modo unbuffered (-u)
 echo "🚀 Iniciando autoclicker.py con la venv del proyecto..."
-./venv/bin/python -u autoclicker.py
+exec ./venv/bin/python -u autoclicker.py

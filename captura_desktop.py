@@ -18,9 +18,11 @@ from PIL import Image, ImageGrab, ImageDraw, ImageFont
 import pyautogui as pg
 
 DIRECTORIO_ACTUAL = os.path.dirname(os.path.abspath(__file__))
-RUTA_CAPTURA_1X = os.path.join(DIRECTORIO_ACTUAL, "captura_pantalla.png")
-RUTA_CAPTURA_RETINA = os.path.join(DIRECTORIO_ACTUAL, "captura_pantalla_retina_2x.png")
-RUTA_CAPTURA_GUIA = os.path.join(DIRECTORIO_ACTUAL, "captura_pantalla_con_coordenadas.png")
+DIR_CAPTURAS = os.path.join(DIRECTORIO_ACTUAL, "capturas")
+os.makedirs(DIR_CAPTURAS, exist_ok=True)
+RUTA_CAPTURA_1X = os.path.join(DIR_CAPTURAS, "captura_pantalla.png")
+RUTA_CAPTURA_RETINA = os.path.join(DIR_CAPTURAS, "captura_pantalla_retina_2x.png")
+RUTA_CAPTURA_GUIA = os.path.join(DIR_CAPTURAS, "captura_pantalla_con_coordenadas.png")
 
 
 class ScreenHelper:

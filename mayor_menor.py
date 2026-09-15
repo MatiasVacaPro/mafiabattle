@@ -39,7 +39,7 @@ except ImportError:
 COORD_CASINO_BARRA = (880, 973)
 
 # 2. Pestaña superior del minijuego (Icono bola 8 verde con flechas)
-COORD_PESTANA      = (628, 299)
+COORD_PESTANA      = (859, 472)
 
 # 3. Botón "START!" (ubicado en el área central inferior de la tarjeta)
 COORD_START        = (993, 689)
@@ -122,7 +122,9 @@ def leer_numero_en_region(region, guardar_debug=False):
         screenshot = pg.screenshot(region=region)
         
         if guardar_debug:
-            ruta_debug = os.path.join(os.path.dirname(os.path.abspath(__file__)), "debug_numero.png")
+            dir_capturas = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capturas")
+            os.makedirs(dir_capturas, exist_ok=True)
+            ruta_debug = os.path.join(dir_capturas, "debug_numero.png")
             screenshot.save(ruta_debug)
             log_msg("DEBUG", "info", f"Captura de región guardada en: {ruta_debug}")
 

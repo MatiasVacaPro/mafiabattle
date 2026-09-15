@@ -29,19 +29,19 @@ ACTIVO_TEMPORIZADOR_1     = False   # Celebrities District (Ejecución cada 6 mi
 ACTIVO_TEMPORIZADOR_2     = False   # Shopping Street (Ejecución cada 6 minutos)
 ACTIVO_TEMPORIZADOR_3     = False   # Jardin Clasico (Ejecución cada 10 minutos)
 ACTIVO_TEMPORIZADOR_4     = True   # Mafiosi District (Ejecución cada 8 minutos)
-ACTIVO_TEMPORIZADOR_6     = True   # Residential Area (Ejecución cada 8 minutos)
+ACTIVO_TEMPORIZADOR_6     = False   # Residential Area (Ejecución cada 8 minutos)
 ACTIVO_TEMPORIZADOR_7     = True   # Billonari Club (Ejecución cada 8 minutos)
 ACTIVO_FABRICACION_CRISTAL = False  # Fabricación de Cristal - Con temporizador (Ejecución cada 2 horas / cooldown)
 ACTIVO_RULETA             = True   # Ruleta - Sin temporizador (Ejecución cada 30 minutos)
 ACTIVO_MAYOR_MENOR        = True   # Mayor o Menor (Higher/Lower) - Sin temporizador (Ejecución cada 30 minutos)
 ACTIVO_MAS_VIDA           = True   # Más vida - Sin temporizador (Ejecución dinámica según temporizadores activos)
-ACTIVO_RECOLECTOR_PIEDRAS = True  # Recolector de piedras preciosas - Sin temporizador (Ejecución cada 3 horas)
+ACTIVO_RECOLECTOR_PIEDRAS = False  # Recolector de piedras preciosas - Sin temporizador (Ejecución cada 3 horas)
 ACTIVO_ANTI_INACTIVIDAD   = True   # Auto-Reload OCR Vision - Detección a ~1 FPS y pulsación de RELOAD inmediata
 
 
 # ---- Configuración del módulo GYM ----s
-ACTIVO_GYM                 = True
-MAX_GYM_LOOPS              = 10
+ACTIVO_GYM                 = False
+MAX_GYM_LOOPS              = 8
 ASIGNAR_GYM_A              = "bucle_temporizador_7"  # Puede cambiarse por "bucle_temporizador_2", "bucle_temporizador_3", etc.
 DESPLAZAR_GYM_SOLO_UNA_VEZ = True                    # True: desplaza solo la primera vez en la sesión; False: desplaza siempre
 INTERVALO_GYM              = 300                     # Cooldown del gimnasio en segundos (300 = 5 minutos)
@@ -694,7 +694,7 @@ def bucle_no_temporizadores_ruleta():
 # MINIJUEGO MAYOR O MENOR (HIGHER / LOWER)
 # =====================================================================
 COORD_MM_CASINO_BARRA = (880, 973)
-COORD_MM_PESTANA      = (628, 299)
+COORD_MM_PESTANA      = (859, 472)
 COORD_MM_START        = (993, 689)
 REGION_MM_NUMERO      = (929, 486, 170, 124)
 COORD_MM_MAYOR        = (993, 663)
@@ -873,74 +873,23 @@ def bucle_recolector_piedras():
 
 
 # =====================================================================
-# MONITOR ANTI-INACTIVIDAD INTELIGENTE (OCR VISION A 1 FPS)
+# MONITOR ANTI-INACTIVIDAD INTELIGENTE (MÓDULO EXTERIORIZADO)
 # =====================================================================
-COORD_IDLE_RELOAD_BTN  = (837, 689)
-REGION_IDLE_RELOAD_BTN = (745, 660, 185, 60)
+try:
+    from anti_inactividad import bucle_anti_inactividad as bucle_anti_inactividad_externo
+except ImportError:
+    bucle_anti_inactividad_externo = None
 
 
 def bucle_anti_inactividad():
     """
     Bucle Anti-Inactividad Inteligente (Vision OCR ~1 FPS):
-    Monitorea de forma ultraligera el área de 'Idle too long' y presiona
-    automáticamente el botón RELOAD en cuanto aparece el aviso.
+    Delega en el módulo especializado anti_inactividad.py con bloqueo compartido action_lock.
     """
-    log_msg("Anti-Inactividad", "activo", "Monitor OCR activo (~1 FPS) para detectar 'Idle too long' / RELOAD...")
-    while True:
-        try:
-            # Capturar la pequeña región del botón RELOAD (185x60 px)
-            screenshot = pg.screenshot(region=REGION_IDLE_RELOAD_BTN)
-            texto = ""
-            if VISION_DISPONIBLE:
-                buf = io.BytesIO()
-                screenshot.save(buf, format="PNG")
-                data = Foundation.NSData.dataWithBytes_length_(buf.getvalue(), len(buf.getvalue()))
-                handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(data, None)
-                request = Vision.VNRecognizeTextRequest.alloc().init()
-                request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelFast)
-                request.setUsesLanguageCorrection_(False)
-                success, _ = handler.performRequests_error_([request], None)
-                if success:
-                    results = request.results()
-                    parts = [c.string() for obs in results for c in obs.topCandidates_(1)]
-                    texto = " ".join(parts).upper()
-            elif TESSERACT_DISPONIBLE:
-                texto = pytesseract.image_to_string(screenshot).strip().upper()
-
-            # Si detecta la palabra RELOAD o IDLE
-            if "RELOAD" in texto or "IDLE" in texto:
-                log_msg("Anti-Inactividad", "alerta", f"⚠️ Detectado aviso de inactividad ('{texto.strip()}').")
-                with action_lock:
-                    log_msg("Anti-Inactividad", "ejecutando", f"Pulsando botón RELOAD en {COORD_IDLE_RELOAD_BTN}...")
-                    pg.click(COORD_IDLE_RELOAD_BTN)
-                    sleep(2.0)
-                    pg.press('enter')
-                    
-                    log_msg("Anti-Inactividad", "espera", "Esperando 6s para carga inicial del juego...")
-                    sleep(6.0)
-                    
-                    # Secuencia de restauración para asegurar la pantalla principal de la ciudad
-                    log_msg("Anti-Inactividad", "ejecutando", "Ejecutando secuencia de login y retorno a pantalla principal...")
-                    pg.press('enter')
-                    sleep(3.0)
-                    pg.press('enter')
-                    sleep(2.0)
-                    
-                    # Cerrar posibles popups de bienvenida/recompensas
-                    pg.press('escape')
-                    sleep(0.8)
-                    pg.press('escape')
-                    sleep(0.8)
-                    pg.press('escape')
-                    sleep(0.5)
-                    
-                    log_msg("Anti-Inactividad", "completado", "✅ Pantalla principal de la ciudad restaurada con éxito.")
-
-        except Exception as e:
-            log_msg("Anti-Inactividad", "error", f"Error en detector: {e}")
-
-        # Tasa de refresco a ~1 FPS (1 segundo de espera entre escaneos ligeros)
-        sleep(1.0)
+    if bucle_anti_inactividad_externo:
+        bucle_anti_inactividad_externo(lock=action_lock)
+    else:
+        log_msg("Anti-Inactividad", "error", "No se pudo importar el módulo 'anti_inactividad.py'.")
 
 
 def bucle_fabricacion_cristal():

@@ -13,7 +13,14 @@ venv/
 .venv/
 ENV/
 
-# Temporary debug images
-*.png
-*.jpg
-*.jpeg
+# Backups y archivos comprimidos
+*.zip
+*.tar.gz
+
+# Archivos temporales de depuración generados en ejecución
+captura_pantalla*.png
+debug_*.png
+
+# Plantillas visuales esenciales para OCR y reconocimiento
+!crop_*.png
+!capturas/
