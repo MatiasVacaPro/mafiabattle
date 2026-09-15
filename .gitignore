@@ -13,6 +13,9 @@ venv/
 .venv/
 ENV/
 
+# Local wheel cache
+wheels/
+
 # Backups y archivos comprimidos
 *.zip
 *.tar.gz

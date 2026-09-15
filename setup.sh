@@ -57,12 +57,21 @@ else
 fi
 
 # 3. Instalar o actualizar dependencias
-echo "📥 Instalando dependencias de 'requirements.txt'..."
-if [ "$USE_UV" = true ]; then
-    uv pip install -r requirements.txt --python ./venv/bin/python
+echo "📥 Instalando dependencias..."
+if [ -d "wheels" ] && [ "$(ls -A wheels)" ]; then
+    echo "📦 Detectada carpeta local de 'wheels'. Instalando en modo rápido/offline..."
+    if [ "$USE_UV" = true ]; then
+        uv pip install --no-index --find-links ./wheels -r requirements.txt --python ./venv/bin/python || uv pip install -r requirements.txt --python ./venv/bin/python
+    else
+        ./venv/bin/pip install --no-index --find-links=./wheels -r requirements.txt || ./venv/bin/pip install -r requirements.txt
+    fi
 else
-    ./venv/bin/python -m pip install --upgrade pip
-    ./venv/bin/pip install -r requirements.txt
+    if [ "$USE_UV" = true ]; then
+        uv pip install -r requirements.txt --python ./venv/bin/python
+    else
+        ./venv/bin/python -m pip install --upgrade pip
+        ./venv/bin/pip install -r requirements.txt
+    fi
 fi
 echo "✅ Dependencias instaladas con éxito."
 
