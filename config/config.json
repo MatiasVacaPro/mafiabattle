@@ -1,0 +1,98 @@
+{
+  "screen": {
+    "target_resolution": [1680, 1050],
+    "failsafe": true
+  },
+  "delays": {
+    "action_delay": 1.0,
+    "inter_click_delay": 0.35,
+    "login_wait": 5.0
+  },
+  "tasks": {
+    "celebrities_district": {
+      "enabled": false,
+      "interval_seconds": 360,
+      "initial_delay": "",
+      "description": "Celebrities District (6 min)"
+    },
+    "shopping_street": {
+      "enabled": false,
+      "interval_seconds": 360,
+      "initial_delay": "",
+      "description": "Shopping Street (6 min)"
+    },
+    "jardin_clasico": {
+      "enabled": false,
+      "interval_seconds": 600,
+      "initial_delay": "",
+      "description": "Jardín Clásico (10 min)"
+    },
+    "mafiosi_district": {
+      "enabled": true,
+      "interval_seconds": 480,
+      "initial_delay": "",
+      "description": "Mafiosi District (8 min)"
+    },
+    "residential_area": {
+      "enabled": false,
+      "interval_seconds": 480,
+      "initial_delay": "2h 23m",
+      "description": "Residential Area (8 min)"
+    },
+    "billonari_club": {
+      "enabled": true,
+      "interval_seconds": 480,
+      "initial_delay": "",
+      "description": "Billonari Club (8 min)"
+    },
+    "fabricacion_cristal": {
+      "enabled": false,
+      "interval_seconds": 7200,
+      "initial_delay": "48m",
+      "description": "Fabricación de Cristal (2 horas)"
+    },
+    "ruleta": {
+      "enabled": true,
+      "interval_seconds": 1800,
+      "initial_delay": "",
+      "description": "Ruleta de Casino (30 min)"
+    },
+    "mayor_menor": {
+      "enabled": true,
+      "interval_seconds": 1800,
+      "initial_delay": "",
+      "max_rounds": 10,
+      "cutoff_value": 50,
+      "description": "Minijuego Mayor o Menor (30 min)"
+    },
+    "mas_vida": {
+      "enabled": true,
+      "dynamic_interval": true,
+      "initial_delay": "",
+      "description": "Restauración de Vida (intervalo dinámico)"
+    },
+    "recolector_piedras": {
+      "enabled": false,
+      "interval_seconds": 10800,
+      "initial_delay": "",
+      "description": "Recolector de Piedras Preciosas (3 horas)"
+    },
+    "gym": {
+      "enabled": false,
+      "interval_seconds": 300,
+      "cooldown_24h": 86400,
+      "max_loops": 8,
+      "displace_once": true,
+      "description": "Entrenamiento en Gimnasio"
+    },
+    "anti_idle": {
+      "enabled": true,
+      "check_interval_seconds": 1.5,
+      "description": "Monitor Anti-Inactividad Inteligente con Apple Vision OCR"
+    }
+  },
+  "decision_engine": {
+    "provider": "local_rules",
+    "fallback_to_rules": true
+  }
+}
