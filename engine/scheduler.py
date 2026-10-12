@@ -52,13 +52,20 @@ class TaskScheduler:
             while self._running:
                 now = time.time()
 
+                # Verificar si el usuario está interactuando (tolerancia a injerencia humana)
+                if self.input_ctrl.is_user_interfering():
+                    self.input_ctrl.sleep(0.5)
+                    continue
+
                 # 1. Ejecutar tareas de alta prioridad (e.g. Anti-Inactividad)
                 for hp_task in self.high_priority_tasks:
+                    if self.input_ctrl.is_user_interfering():
+                        break
                     if hp_task.can_run(now, self.state_mgr):
                         hp_task.run(self.input_ctrl, self.vision, self.state_mgr, self.decision_engine)
 
-                # Si el sistema está pausado, esperar
-                if self.input_ctrl.is_paused:
+                # Si el sistema está pausado o el usuario interactúa, esperar
+                if self.input_ctrl.is_paused or self.input_ctrl.is_user_interfering():
                     self.input_ctrl.sleep(0.5)
                     continue
 
@@ -69,7 +76,7 @@ class TaskScheduler:
                     for task in ready_tasks:
                         if not self._running:
                             break
-                        if self.input_ctrl.is_paused:
+                        if self.input_ctrl.is_paused or self.input_ctrl.is_user_interfering():
                             break
                             
                         # Manejo de login en el primer arranque si tenía retraso
@@ -96,4 +103,9 @@ class TaskScheduler:
     def stop(self) -> None:
         """Detiene la ejecución del planificador."""
         self._running = False
+        if getattr(self.input_ctrl, "bidi", None):
+            try:
+                self.input_ctrl.bidi.close()
+            except Exception:
+                pass
         log_msg("SCHEDULER", "completado", "TaskScheduler detenido.")

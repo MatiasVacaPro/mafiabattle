@@ -1,13 +1,19 @@
 import sys
 import threading
 import time
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import pyautogui as pg
 
 from core.logger import log_msg
 
+if TYPE_CHECKING:
+    from core.zen_bidi import ZenBiDiClient
+    from core.game_bridge import MafiaBattleBridge
+    from core.user_activity_monitor import UserActivityMonitor
+
 # Fail-safe habilitado
 pg.FAILSAFE = True
+
 
 class PausableLock:
     """Lock que espera automáticamente mientras el sistema esté en pausa antes de permitir clicks."""
@@ -16,10 +22,10 @@ class PausableLock:
         self._lock = threading.Lock()
 
     def __enter__(self):
-        while self._controller.is_paused:
+        while self._controller.is_paused or self._controller.is_user_interfering():
             self._controller.pause_event.wait(0.2)
         self._lock.acquire()
-        while self._controller.is_paused:
+        while self._controller.is_paused or self._controller.is_user_interfering():
             self._lock.release()
             self._controller.pause_event.wait(0.2)
             self._lock.acquire()
@@ -30,9 +36,17 @@ class PausableLock:
 
 
 class InputController:
-    """Controlador centralizado y seguro de mouse, teclado y estados de pausa."""
+    """
+    Controlador centralizado y seguro de mouse, teclado, estados de pausa
+    y comunicación WebDriver BiDi en segundo plano con Zen Browser.
+    """
 
-    def __init__(self):
+    def __init__(
+        self,
+        bidi_client: Optional['ZenBiDiClient'] = None,
+        game_bridge: Optional['MafiaBattleBridge'] = None,
+        user_monitor: Optional['UserActivityMonitor'] = None
+    ):
         self.is_paused = False
         self.pause_event = threading.Event()
         self.pause_event.set()
@@ -40,45 +54,70 @@ class InputController:
         self.lock = PausableLock(self)
         self._keyboard_listener = None
 
+        self.bidi: Optional['ZenBiDiClient'] = bidi_client
+        self.bridge: Optional['MafiaBattleBridge'] = game_bridge
+        self.user_monitor: Optional['UserActivityMonitor'] = user_monitor
+
+    @property
+    def is_bidi_mode(self) -> bool:
+        """Indica si el bot está operando en modo BiDi en segundo plano."""
+        return self.bidi is not None and self.bridge is not None
+
+    def is_user_interfering(self) -> bool:
+        """Comprueba si el usuario humano está interactuando activamente con la página."""
+        if self.user_monitor:
+            try:
+                return self.user_monitor.is_user_active()
+            except Exception:
+                pass
+        return False
+
     def toggle_pause(self) -> bool:
         """Alterna el estado de pausa del bot."""
         ahora = time.time()
         if ahora - self._last_toggle_time < 0.25:
             return self.is_paused
-        
+
         self._last_toggle_time = ahora
         self.is_paused = not self.is_paused
-        
+
         if self.is_paused:
             self.pause_event.clear()
             log_msg("SISTEMA", "pausa", "PAUSADO — Clicks en espera (Presiona 'P' para reanudar)")
         else:
             self.pause_event.set()
             log_msg("SISTEMA", "reanudar", "REANUDADO — Ejecutando tareas activas")
-            
+
         return self.is_paused
 
     def sleep(self, seconds: float) -> None:
-        """Espera de forma no bloqueante y respetando pausas."""
+        """Espera de forma no bloqueante respetando pausas e interferencia del usuario."""
         end_time = time.time() + seconds
         while time.time() < end_time:
             while self.is_paused:
                 self.pause_event.wait(0.2)
-                end_time = time.time() + seconds  # Reiniciar o extender espera
+                end_time = time.time() + seconds
+
+            # Tolerancia a interferencia del usuario en modo BiDi
+            if self.is_user_interfering():
+                time.sleep(0.5)
+                end_time = time.time() + seconds
+                continue
+
             remaining = end_time - time.time()
             if remaining <= 0:
                 break
             time.sleep(min(0.2, remaining))
 
     def click(self, x: int, y: int, clicks: int = 1, interval: float = 0.1, delay_after: float = 1.0) -> None:
-        """Ejecuta un clic seguro coordinado."""
+        """Ejecuta un clic coordinado."""
         with self.lock:
             pg.click(x=x, y=y, clicks=clicks, interval=interval)
             if delay_after > 0:
                 self.sleep(delay_after)
 
     def double_click(self, x: int, y: int, delay_after: float = 1.0) -> None:
-        """Ejecuta un doble clic seguro."""
+        """Ejecuta un doble clic coordinado."""
         with self.lock:
             pg.doubleClick(x=x, y=y)
             if delay_after > 0:
@@ -99,31 +138,41 @@ class InputController:
                 self.sleep(delay_after)
 
     def regresar_al_punto_inicial(self, veces: int = 3, pausa: float = 0.35) -> None:
-        """Presiona 'escape' para cerrar modales y volver al punto inicial del juego."""
+        """Cierra modales y regresa a la vista principal limpia."""
         with self.lock:
+            if self.is_bidi_mode and self.bridge:
+                try:
+                    self.bridge.close_all_modals()
+                    return
+                except Exception:
+                    pass
+
             self.sleep(0.3)
             for _ in range(veces):
                 pg.press('escape')
                 self.sleep(pausa)
 
     def ejecutar_login(self) -> None:
-        """Secuencia de recarga de página y login en el navegador."""
+        """Secuencia de validación de login en el navegador."""
         log_msg("LOGIN", "ejecutando", "Ejecutando secuencia de login...")
         with self.lock:
+            if self.is_bidi_mode and self.bridge:
+                try:
+                    if self.bridge.perform_login_if_needed():
+                        log_msg("LOGIN", "completado", "Sesión iniciada vía BiDi exitosamente.")
+                        return
+                except Exception as e:
+                    log_msg("LOGIN", "alerta", f"Fallo en login BiDi, intentando fallback GUI: {e}")
+
             log_msg("LOGIN", "ejecutando", "Recargando página (cmd+r)...")
             pg.hotkey('command', 'r')
             self.sleep(2.0)
-            
-            log_msg("LOGIN", "ejecutando", "Confirmando con Enter...")
             pg.press('enter')
             self.sleep(5.0)
-            
             pg.press('enter')
             self.sleep(2.0)
             pg.press('enter')
             self.sleep(1.0)
-            
-            # Limpiar posibles diálogos
             self.regresar_al_punto_inicial(veces=2, pausa=0.5)
             log_msg("LOGIN", "completado", "Secuencia de login finalizada.")
 
@@ -131,7 +180,7 @@ class InputController:
         """Inicia el escuchador global de teclado en segundo plano (tecla 'P')."""
         try:
             from pynput import keyboard
-            
+
             def on_press(key):
                 try:
                     if hasattr(key, 'char') and key.char in ['p', 'P']:

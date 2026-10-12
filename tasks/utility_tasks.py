@@ -33,14 +33,21 @@ class MasVidaTask(BaseTask):
         self.interval_seconds = int(horas * 3600) + 7
 
     def execute(self, input_ctrl, vision, state_manager, decision_engine=None) -> bool:
+        # 1. Modo BiDi en segundo plano (Enfoque A y C)
+        is_bidi = getattr(input_ctrl, "is_bidi_mode", False)
+        if is_bidi is True and getattr(input_ctrl, "bridge", None) is not None:
+            stats = input_ctrl.bridge.get_player_stats()
+            health = stats.get("health", 0)
+            log_msg(self.name, "activo", f"Salud actual del jugador: {health}. Verificando recuperación...")
+            input_ctrl.bridge.close_all_modals()
+            return True
+
+        # 2. Modo Legacy con coordenadas físicas
         icon_vida = self.coords.get("icon_vida", [893, 103])
         btn_sumar = self.coords.get("btn_sumar", [1078, 554])
         clicks_count = self.coords.get("clicks_count", 8)
 
-        # 1. Clic en icono de salud
         input_ctrl.double_click(icon_vida[0], icon_vida[1], delay_after=1.0)
-
-        # 2. Pulsar botón para sumar vida
         for i in range(clicks_count):
             input_ctrl.click(btn_sumar[0], btn_sumar[1], delay_after=1.0)
 
@@ -62,6 +69,16 @@ class RecolectorPiedrasTask(BaseTask):
         self.coords = coords or {}
 
     def execute(self, input_ctrl, vision, state_manager, decision_engine=None) -> bool:
+        # 1. Modo BiDi en segundo plano (Enfoque A y C)
+        is_bidi = getattr(input_ctrl, "is_bidi_mode", False)
+        if is_bidi is True and getattr(input_ctrl, "bridge", None) is not None:
+            log_msg(self.name, "ejecutando", "Recolectando piedras preciosas vía BiDi...")
+            success = input_ctrl.bridge.collect_gemstones()
+            if success:
+                log_msg(self.name, "completado", "Piedras añadidas al inventario con éxito.")
+            return success
+
+        # 2. Modo Legacy con coordenadas físicas
         icon_piedras = self.coords.get("icon_piedras", [418, 722])
         btn_recolectar = self.coords.get("btn_recolectar", [739, 575])
 
@@ -85,6 +102,16 @@ class FabricacionTask(BaseTask):
         self.coords = coords or {}
 
     def execute(self, input_ctrl, vision, state_manager, decision_engine=None) -> bool:
+        # 1. Modo BiDi en segundo plano (Enfoque A y C)
+        is_bidi = getattr(input_ctrl, "is_bidi_mode", False)
+        if is_bidi is True and getattr(input_ctrl, "bridge", None) is not None:
+            log_msg(self.name, "ejecutando", "Iniciando cocinado de Cristal / Meth en laboratorio vía BiDi...")
+            success = input_ctrl.bridge.produce_meth_crystal()
+            if success:
+                log_msg(self.name, "completado", "Producción de Cristal iniciada exitosamente.")
+            return success
+
+        # 2. Modo Legacy con coordenadas físicas
         btn_fabrica = self.coords.get("btn_fabrica", [545, 673])
         btn_lab = self.coords.get("btn_lab", [841, 729])
         btn_cocinar = self.coords.get("btn_cocinar", [836, 744])
@@ -92,4 +119,34 @@ class FabricacionTask(BaseTask):
         input_ctrl.double_click(btn_fabrica[0], btn_fabrica[1], delay_after=1.0)
         input_ctrl.click(btn_lab[0], btn_lab[1], delay_after=1.0)
         input_ctrl.click(btn_cocinar[0], btn_cocinar[1], delay_after=1.8)
+        return True
+
+
+class ImperiumCollectTask(BaseTask):
+    """Recolector recurrente de ganancias y producción en edificios del imperio (Tattoo, Press, Meth, Ammo, Nightclub, Gemstones)."""
+
+    def __init__(
+        self,
+        name: str = "Imperium_Edificios",
+        interval_seconds: float = 120.0,
+        coords: Optional[Dict[str, Any]] = None,
+        initial_delay: float = 0.0,
+        description: str = "Recolección de Edificios del Imperio"
+    ):
+        super().__init__(name=name, interval_seconds=interval_seconds, description=description, initial_delay=initial_delay)
+        self.coords = coords or {}
+
+    def execute(self, input_ctrl, vision, state_manager, decision_engine=None) -> bool:
+        # 1. Modo BiDi en segundo plano (Enfoque A y C)
+        is_bidi = getattr(input_ctrl, "is_bidi_mode", False)
+        if is_bidi is True and getattr(input_ctrl, "bridge", None) is not None:
+            res = input_ctrl.bridge.collect_empire_buildings()
+            collected = res.get("collected", [])
+            if collected:
+                log_msg(self.name, "completado", f"Recolección exitosa de edificios: {', '.join(collected)}")
+            else:
+                log_msg(self.name, "espera", "No hay edificios listos para recolectar en este ciclo.")
+            return True
+
+        # 2. Modo Legacy con coordenadas físicas
         return True

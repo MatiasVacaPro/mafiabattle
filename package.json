@@ -1,0 +1,15 @@
+{
+	"name": "mafiabattle",
+	"version": "1.0.0",
+	"description": "DOM fixtures for the MafiaBattle BiDi supervisor",
+	"private": true,
+	"scripts": {
+		"test": "bun test tests/supervisor.test.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"happy-dom": "^20.14.5"
+	}
+}

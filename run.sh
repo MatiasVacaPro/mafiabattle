@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
 # =====================================================================
-# Script de Inicio - MafiaBattle Autoclicker
+# Script de Inicio - MafiaBattle Autonomous Engine (Enfoque A & C)
 # =====================================================================
-
+set -euo pipefail
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
 # Auto-despliegue si el entorno virtual aún no existe
 if [ ! -f "./venv/bin/python" ]; then
-    echo "⚠️  Entorno virtual no detectado. Ejecutando setup.sh automáticamente..."
-    bash ./setup.sh
+    uv venv --python 3.14.2 venv
+    uv pip install --python ./venv/bin/python -r requirements-bidi.txt
 fi
+source ./venv/bin/activate
 
-# Ejecutar el script principal con Python en modo unbuffered (-u)
-echo "🚀 Iniciando autoclicker.py con la venv del proyecto..."
-exec ./venv/bin/python -u autoclicker.py
+# Entrada canónica: supervisor residente BiDi. El legacy sigue en main.py.
+case "${1:-start}" in
+  start) [[ $# -eq 0 ]] || shift; exec ./venv/bin/python -u main_bidi.py --background "$@" ;;
+  run) shift; exec ./venv/bin/python -u main_bidi.py "$@" ;;
+  stop) exec ./venv/bin/python main_bidi.py --stop ;;
+  status) exec ./venv/bin/python main_bidi.py --status ;;
+  install-service) exec ./venv/bin/python scripts/manage_service.py install ;;
+  remove-service) exec ./venv/bin/python scripts/manage_service.py remove ;;
+  service-status) exec ./venv/bin/python scripts/manage_service.py status ;;
+  restart-service) exec ./venv/bin/python scripts/manage_service.py restart ;;
+  *) exec ./venv/bin/python -u main_bidi.py "$@" ;;
+esac

@@ -1,12 +1,15 @@
 {
   "screen": {
-    "target_resolution": [1680, 1050],
+    "target_resolution": [
+      1680,
+      1050
+    ],
     "failsafe": true
   },
   "delays": {
-    "action_delay": 1.0,
+    "action_delay": 1,
     "inter_click_delay": 0.35,
-    "login_wait": 5.0
+    "login_wait": 5
   },
   "tasks": {
     "celebrities_district": {
@@ -85,6 +88,12 @@
       "displace_once": true,
       "description": "Entrenamiento en Gimnasio"
     },
+    "imperium_buildings": {
+      "enabled": true,
+      "interval_seconds": 180,
+      "initial_delay": "",
+      "description": "Recolección de Edificios del Imperio (Tattoo, Press, Meth, Ammo, Nightclub, Gemstones)"
+    },
     "anti_idle": {
       "enabled": true,
       "check_interval_seconds": 1.5,
@@ -94,5 +103,453 @@
   "decision_engine": {
     "provider": "local_rules",
     "fallback_to_rules": true
+  },
+  "bidi": {
+    "endpoint": "ws://127.0.0.1:9222/session",
+    "target_url": "https://www.mafiabattle.com/es/",
+    "account": "mati792",
+    "account_selector": ".player1_username",
+    "user_pause_seconds": 15,
+    "heartbeat_seconds": 2,
+    "lease_seconds": 30,
+    "tick_ms": 1000,
+    "action_delay_ms": 1200,
+    "ack_timeout_ms": 15000,
+    "command_timeout_seconds": 10,
+    "reconnect_min_seconds": 1,
+    "reconnect_max_seconds": 30,
+    "modules": {
+      "criminal_activities": {
+        "enabled": true,
+        "minimum_health": 15,
+        "unfinished_only": true,
+        "activities": [
+          {
+            "family": "cars",
+            "root": "#dialog_cars",
+            "location_prefix": "cars_location_",
+            "command": "robbing:perform",
+            "route": [
+              {
+                "selector": "#go_crimes",
+                "root": "#dialog_crimes"
+              },
+              {
+                "selector": "#dialog_crimes .cars_nav",
+                "root": "#dialog_cars"
+              }
+            ]
+          },
+          {
+            "family": "crimes",
+            "root": "#dialog_crimes",
+            "location_prefix": "crimes_location_",
+            "command": "crime:perform",
+            "route": [
+              {
+                "selector": "#go_crimes",
+                "root": "#dialog_crimes"
+              }
+            ]
+          }
+        ],
+        "reserve_slots": 1,
+        "event_objectives_enabled": false
+      },
+      "anti_idle": {
+        "enabled": true,
+        "keepalive_seconds": 60,
+        "auto_login": true
+      },
+      "district_collector": {
+        "enabled": true,
+        "collectors": [
+          {
+            "id": "moneypress_cash",
+            "selector": "#imperium #moneypress .collect.cash",
+            "capacity_global": "moneypress_capacity",
+            "minimum": 1000,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "empire": 1
+          },
+          {
+            "id": "tattooshop_cash",
+            "selector": "#imperium #tattooshop .collect.cash",
+            "capacity_global": "tattooshop_capacity",
+            "minimum": 1000,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "empire": 1
+          },
+          {
+            "id": "nightclub_cash",
+            "selector": "#imperium #nightclub .collect.cash",
+            "capacity_global": "nightclub_capacity",
+            "minimum": 1000,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "empire": 1
+          },
+          {
+            "id": "redlight_cash",
+            "selector": "#imperium #redlight .collect.cash",
+            "capacity_global": "redlight_capacity",
+            "minimum": 1,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "empire": 1
+          },
+          {
+            "id": "gemstonesfactory_cash",
+            "selector": "#imperium #gemstonesfactory .collect.cash",
+            "capacity_global": "gemstonesfactory_capacity",
+            "minimum": 1000,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "empire": 1
+          },
+          {
+            "id": "ammunition_collect",
+            "selector": "#imperium #ammunitionfactory .collect.ammunition",
+            "capacity_global": "ammunitionfactory_capacity",
+            "minimum": 1,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "empire": 1
+          },
+          {
+            "empire": 2,
+            "minimum": 1000,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "expected_command": "object:collect",
+            "require_server_ack": true,
+            "allow_readback": true,
+            "native_indicator_only": true,
+            "id": "scrapyard_cash",
+            "selector": "#imperium #scrapyard .collect.cash",
+            "capacity_global": "scrapyard_capacity",
+            "require_cash_gain": true
+          },
+          {
+            "empire": 2,
+            "minimum": 1000,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "expected_command": "object:collect",
+            "require_server_ack": true,
+            "allow_readback": true,
+            "native_indicator_only": true,
+            "id": "mafiabar_cash",
+            "selector": "#imperium #mafiabar .collect.cash",
+            "capacity_global": "mafiabar_cashcapacity",
+            "require_cash_gain": true
+          },
+          {
+            "empire": 2,
+            "minimum": 1,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "expected_command": "object:collect",
+            "require_server_ack": true,
+            "allow_readback": true,
+            "native_indicator_only": true,
+            "id": "alcohol_transfer",
+            "selector": "#imperium #alcoholfactory .collect.alcohol",
+            "capacity_selector": "#dialog_alcoholfactory .stat_alcohol .progress",
+            "target_capacity_global": "mafiabar_capacity",
+            "target_capacity_selector": "#dialog_mafiabar .stat_alcohol .progress",
+            "minimum_target_space": 50,
+            "upgrade_root": "#dialog_mafiabar"
+          },
+          {
+            "empire": 2,
+            "minimum": 1,
+            "cooldown_seconds": 300,
+            "requires_timer_slot": false,
+            "expected_command": "warehouse:openbox",
+            "require_server_ack": true,
+            "allow_readback": true,
+            "native_indicator_only": true,
+            "id": "warehouse_box",
+            "selector": "#imperium #warehouse .collect.box"
+          }
+        ]
+      },
+      "gym_trainer": {
+        "enabled": true,
+        "open_selector": "#imperium #gym .tip",
+        "room": 4,
+        "reserve_slots": 1,
+        "energy_selector": null,
+        "minimum_energy": 1
+      },
+      "casino_games": {
+        "enabled": true,
+        "open_selector": "#go_casino, .button.casino",
+        "max_rounds": 10,
+        "cutoff_value": 50,
+        "games": [
+          {
+            "id": "wheel_spin",
+            "game": "wheel",
+            "enabled": true,
+            "root": "#dialog_casino_wheel",
+            "button": ".spin_button",
+            "selector": "#dialog_casino_wheel .spin_button",
+            "open_selector": "#main_button_wheeloffortune",
+            "cooldown_seconds": 1800
+          },
+          {
+            "id": "hilo_start",
+            "game": "hilo",
+            "enabled": true,
+            "root": "#dialog_casino_higherlower",
+            "button": ".start_button",
+            "selector": "#dialog_casino_higherlower .start_button",
+            "open_selector": "#main_button_higherlower",
+            "cooldown_seconds": 1800
+          }
+        ],
+        "number_wait_timeout_seconds": 60
+      },
+      "production": {
+        "enabled": true,
+        "reserve_slots": 0,
+        "factories": [
+          {
+            "id": "meth_produce",
+            "empire": 1,
+            "objective_resource": "meth",
+            "root": "#dialog_methlab_lab",
+            "open_selector": "#imperium #methlab .tip",
+            "selector": "#dialog_methlab_lab .button.produce",
+            "production_root": "#dialog_methlab",
+            "capacity_global": "methlab_capacity",
+            "capacity_selector": "#dialog_methlab .stat_meth .progress",
+            "quantity_selector": "#dialog_methlab .stat_cooking .progress",
+            "cash_free_native": true,
+            "expected_type": "methlab",
+            "maximum_cash_cost": 0,
+            "reserve_cash": 100000,
+            "requires_timer_slot": true,
+            "cooldown_seconds": 300,
+            "require_server_ack": true,
+            "require_production_timer": true,
+            "expected_command": "object:produce",
+            "route": [
+              {
+                "selector": "#imperium #methlab .tip",
+                "root": "#dialog_methlab"
+              },
+              {
+                "selector": "#dialog_methlab .button.lab",
+                "root": "#dialog_methlab_lab"
+              }
+            ]
+          },
+          {
+            "id": "xtc_produce",
+            "empire": 2,
+            "root": "#dialog_xtclab_lab",
+            "open_selector": "#imperium #xtclab .collect.exclamation",
+            "selector": "#dialog_xtclab_lab .button.cash",
+            "production_root": "#dialog_xtclab",
+            "capacity_global": "xtclab_capacity",
+            "capacity_selector": "#dialog_xtclab .stat_xtc .progress",
+            "quantity_selector": "#dialog_xtclab .stat_cooking .progress",
+            "maximum_cash_cost": 50000,
+            "reserve_cash": 100000,
+            "requires_timer_slot": true,
+            "cooldown_seconds": 300,
+            "require_server_ack": true,
+            "require_production_timer": true,
+            "expected_command": "object:produce"
+          }
+        ],
+        "scheduled": [
+          {
+            "id": "cigar_offer",
+            "task": "cigar_offer",
+            "empire": 1,
+            "root": "#dialog_cigarfactory_factory",
+            "selector": "#dialog_cigarfactory_factory .offer_details .button.yes",
+            "requires_timer_slot": false,
+            "cooldown_seconds": 300,
+            "require_server_ack": true,
+            "expected_command": "cigarfactory:acceptoffer",
+            "route": [
+              {
+                "selector": "#imperium #cigarfactory .tip",
+                "root": "#dialog_cigarfactory"
+              },
+              {
+                "selector": "#dialog_cigarfactory .button.lab",
+                "root": "#dialog_cigarfactory_factory"
+              }
+            ]
+          },
+          {
+            "id": "weed_offer",
+            "task": "weed_offer",
+            "root": "#dialog_weedfarm_offers",
+            "selector": "#dialog_weedfarm_offers .button.yes",
+            "offer_indicator": "#imperium #weedfarm .collect.offer_weed",
+            "requires_timer_slot": false,
+            "cooldown_seconds": 1140,
+            "route": [
+              {
+                "selector": "#imperium #weedfarm .collect.offer_weed",
+                "root": "#dialog_weedfarm_offers"
+              }
+            ],
+            "empire": 1
+          },
+          {
+            "id": "weed_harvest",
+            "task": "weed_harvest",
+            "root": "#dialog_weedfarm_farm",
+            "selector": "#dialog_weedfarm_farm .collect_button",
+            "requires_timer_slot": false,
+            "cooldown_seconds": 1140,
+            "route": [
+              {
+                "selector": "#imperium #weedfarm .tip",
+                "root": "#dialog_weedfarm"
+              },
+              {
+                "selector": "#dialog_weedfarm .button.farm",
+                "root": "#dialog_weedfarm_farm"
+              }
+            ],
+            "empire": 1
+          },
+          {
+            "id": "weed_plant",
+            "task": "weed_plant",
+            "root": "#dialog_weedfarm_farm",
+            "selector": "#dialog_weedfarm_farm .plant.free .plant_button",
+            "requires_timer_slot": false,
+            "cooldown_seconds": 1,
+            "reserve_cash": 100000,
+            "route": [
+              {
+                "selector": "#imperium #weedfarm .tip",
+                "root": "#dialog_weedfarm"
+              },
+              {
+                "selector": "#dialog_weedfarm .button.farm",
+                "root": "#dialog_weedfarm_farm"
+              }
+            ],
+            "empire": 1
+          },
+          {
+            "id": "tattooshop_stock",
+            "task": "stock",
+            "root": "#dialog_tattooshop_stock",
+            "selector": "#tattooshop_lazy",
+            "capacity_selector": "#dialog_tattooshop_stock .stat_sells .progress",
+            "capacity_global": "tattooshop_stockcapacity",
+            "reserve_cash": 100000,
+            "requires_timer_slot": false,
+            "cooldown_seconds": 7200,
+            "route": [
+              {
+                "selector": "#imperium #tattooshop .tip",
+                "root": "#dialog_tattooshop"
+              },
+              {
+                "selector": "#dialog_tattooshop .button.tattoostock",
+                "root": "#dialog_tattooshop_stock"
+              }
+            ],
+            "empire": 1
+          },
+          {
+            "id": "nightclub_stock",
+            "task": "stock",
+            "root": "#dialog_nightclub_stock",
+            "selector": "#nightclub_lazy",
+            "capacity_selector": "#dialog_nightclub_stock .stat_sells .progress",
+            "capacity_global": "nightclub_stockcapacity",
+            "reserve_cash": 100000,
+            "requires_timer_slot": false,
+            "cooldown_seconds": 7200,
+            "route": [
+              {
+                "selector": "#imperium #nightclub .tip",
+                "root": "#dialog_nightclub"
+              },
+              {
+                "selector": "#dialog_nightclub .button.stock",
+                "root": "#dialog_nightclub_stock"
+              }
+            ],
+            "empire": 1
+          },
+          {
+            "id": "gemstone_inventory",
+            "task": "gemstone",
+            "root": "#dialog_gemstonesfactory_produce",
+            "selector": "#dialog_gemstonesfactory_produce .inventory_button",
+            "timer_scope": "#dialog_gemstonesfactory_produce .factory",
+            "requires_timer_slot": false,
+            "cooldown_seconds": 10800,
+            "route": [
+              {
+                "selector": "#imperium #gemstonesfactory .tip",
+                "root": "#dialog_gemstonesfactory"
+              },
+              {
+                "selector": "#dialog_gemstonesfactory .button.factory",
+                "root": "#dialog_gemstonesfactory_produce"
+              }
+            ],
+            "empire": 1
+          }
+        ]
+      },
+      "helicopter": {
+        "enabled": true,
+        "selector": "#heli_copter .bnd"
+      },
+      "health_manager": {
+        "enabled": true,
+        "trigger_below": 100,
+        "refill_to": 400,
+        "reserve_cash": 100000,
+        "maximum_cycle_cash": 400000,
+        "maximum_cash_per_point": 1000,
+        "cycle_cooldown_seconds": 300,
+        "root": "#dialog_shop_valuepacks",
+        "open_selector": "#my_health .plus"
+      },
+      "empire_manager": {
+        "enabled": true,
+        "primary_residence_seconds": 7200,
+        "minimum_primary_ratio": 0.75,
+        "reserve_cash": 100000,
+        "maximum_flight_cash": 100000
+      },
+      "transport_manager": {
+        "enabled": true,
+        "scan_seconds": 300,
+        "minimum_commit_seconds": 86400,
+        "weed_reserve_enabled": false
+      }
+    },
+    "session_mode": "classic",
+    "marionette_port": 2828,
+    "recovery": {
+      "enabled": true,
+      "city_idle": true,
+      "command_stall_seconds": 60,
+      "dialog_idle_seconds": 15,
+      "dialog_close_timeout_seconds": 15,
+      "dialog_stall_seconds": 60,
+      "minimum_reload_seconds": 300
+    }
   }
 }

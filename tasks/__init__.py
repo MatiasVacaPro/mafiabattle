@@ -7,7 +7,7 @@ from tasks.district_tasks import DistrictTask
 from tasks.gym_task import GymTask
 from tasks.casino_tasks import RuletaTask, MayorMenorTask
 from tasks.anti_idle_task import AntiIdleTask
-from tasks.utility_tasks import MasVidaTask, RecolectorPiedrasTask, FabricacionTask
+from tasks.utility_tasks import MasVidaTask, RecolectorPiedrasTask, FabricacionTask, ImperiumCollectTask
 
 __all__ = [
     "BaseTask",
@@ -18,5 +18,6 @@ __all__ = [
     "AntiIdleTask",
     "MasVidaTask",
     "RecolectorPiedrasTask",
-    "FabricacionTask"
+    "FabricacionTask",
+    "ImperiumCollectTask"
 ]

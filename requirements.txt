@@ -19,6 +19,8 @@ rubicon-objc>=0.5.0
 
 # Navegación y utilidades web
 selenium>=4.20.0
+websocket-client>=1.8.0
+websockets>=13.0
 
 # OCR de respaldo opcional
 pytesseract>=0.3.10

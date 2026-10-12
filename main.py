@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-MafiaBattle Autonomous Automation Engine
-========================================
-Punto de entrada principal con arquitectura orientada a objetos (POO),
-configuración centralizada en JSON, motor de reglas local y soporte para evaluación Jev.
+MafiaBattle Autonomous Automation Engine (Enfoque A & C)
+========================================================
+Punto de entrada principal con arquitectura modular POO, control en segundo plano
+vía WebDriver BiDi (Zen Browser), tolerancia a intervención del usuario,
+lectura de estado DOM y ejecución sin secuestro del mouse físico.
 """
 
 import argparse
@@ -17,6 +18,9 @@ from core.config_manager import ConfigManager
 from core.state_manager import StateManager
 from core.input_controller import InputController
 from core.vision_service import VisionService
+from core.zen_bidi import ZenBiDiClient
+from core.game_bridge import MafiaBattleBridge
+from core.user_activity_monitor import UserActivityMonitor
 from engine.rule_engine import LocalRuleEngine
 from engine.scheduler import TaskScheduler
 
@@ -24,15 +28,43 @@ from tasks.district_tasks import DistrictTask
 from tasks.gym_task import GymTask
 from tasks.casino_tasks import RuletaTask, MayorMenorTask
 from tasks.anti_idle_task import AntiIdleTask
-from tasks.utility_tasks import MasVidaTask, RecolectorPiedrasTask, FabricacionTask
+from tasks.utility_tasks import MasVidaTask, RecolectorPiedrasTask, FabricacionTask, ImperiumCollectTask
 
-def build_bot(config_dir: str = None) -> TaskScheduler:
-    """Construye y ensambla todos los componentes del bot a partir de los archivos JSON."""
+
+def build_bot(config_dir: str = None, mode: str = "bidi") -> TaskScheduler:
+    """
+    Construye y ensambla todos los componentes del bot a partir de los archivos JSON.
+    Modo 'bidi': Enfoque A & C (control en segundo plano vía WebSocket Zen Browser).
+    Modo 'gui': Enfoque tradicional (PyAutoGUI + Vision OCR).
+    """
     config_mgr = ConfigManager(config_dir)
     state_mgr = StateManager()
-    input_ctrl = InputController()
     vision_srv = VisionService()
     decision_engine = LocalRuleEngine()
+
+    bidi_client = None
+    game_bridge = None
+    user_monitor = None
+
+    if mode == "bidi":
+        try:
+            bidi_client = ZenBiDiClient()
+            bidi_client.connect()
+            game_bridge = MafiaBattleBridge(bidi_client)
+            user_monitor = UserActivityMonitor(bidi_client)
+            user_monitor.ensure_listener_installed()
+            log_msg("SISTEMA", "activo", "🚀 Modo BiDi Activo: Control en segundo plano sin secuestro de mouse.")
+        except Exception as e:
+            log_msg("SISTEMA", "alerta", f"No se pudo conectar a BiDi ({e}). Activando fallback GUI.")
+            bidi_client = None
+            game_bridge = None
+            user_monitor = None
+
+    input_ctrl = InputController(
+        bidi_client=bidi_client,
+        game_bridge=game_bridge,
+        user_monitor=user_monitor
+    )
 
     scheduler = TaskScheduler(
         input_controller=input_ctrl,
@@ -43,16 +75,16 @@ def build_bot(config_dir: str = None) -> TaskScheduler:
 
     tasks_cfg = config_mgr.config.get("tasks", {})
 
-    # 1. Anti-Inactividad (Alta Prioridad)
+    # 1. Anti-Inactividad 24/7 (Alta Prioridad)
     if tasks_cfg.get("anti_idle", {}).get("enabled", True):
         anti_idle_coords = config_mgr.coordinates.get("anti_idle", {})
-        anti_idle_interval = tasks_cfg.get("anti_idle", {}).get("check_interval_seconds", 1.5)
+        anti_idle_interval = tasks_cfg.get("anti_idle", {}).get("check_interval_seconds", 2.0)
         scheduler.add_task(AntiIdleTask(
             coords=anti_idle_coords,
             interval_seconds=anti_idle_interval
         ))
 
-    # 2. Distritos
+    # 2. Distritos y Barrios
     distritos_map = [
         ("celebrities_district", "Celebrities District"),
         ("shopping_street", "Shopping Street"),
@@ -88,7 +120,7 @@ def build_bot(config_dir: str = None) -> TaskScheduler:
             description=t_cfg.get("description", "Ruleta")
         ))
 
-    # 4. Casino: Mayor o Menor
+    # 4. Casino: Mayor o Menor (Higher / Lower)
     if tasks_cfg.get("mayor_menor", {}).get("enabled", False):
         t_cfg = tasks_cfg["mayor_menor"]
         coords = config_mgr.coordinates.get("casino", {}).get("mayor_menor", {})
@@ -102,7 +134,7 @@ def build_bot(config_dir: str = None) -> TaskScheduler:
             description=t_cfg.get("description", "Mayor o Menor")
         ))
 
-    # 5. Fabricación de Cristal
+    # 5. Fabricación de Cristal / Meth
     if tasks_cfg.get("fabricacion_cristal", {}).get("enabled", False):
         t_cfg = tasks_cfg["fabricacion_cristal"]
         coords = config_mgr.coordinates.get("fabricacion", {})
@@ -134,7 +166,6 @@ def build_bot(config_dir: str = None) -> TaskScheduler:
         t_cfg = tasks_cfg["mas_vida"]
         coords = config_mgr.coordinates.get("mas_vida", {})
         delay_sec = config_mgr.parse_delay_string(t_cfg.get("initial_delay", ""))
-        # Calcular temporizadores activos
         active_count = sum(1 for k in ["celebrities_district", "shopping_street", "jardin_clasico", "mafiosi_district", "residential_area", "billonari_club", "fabricacion_cristal"] if tasks_cfg.get(k, {}).get("enabled", False))
         scheduler.add_task(MasVidaTask(
             coords=coords,
@@ -143,7 +174,7 @@ def build_bot(config_dir: str = None) -> TaskScheduler:
             description=t_cfg.get("description", "Más Vida")
         ))
 
-    # 8. Recolector de Piedras
+    # 8. Recolector de Piedras Preciosas
     if tasks_cfg.get("recolector_piedras", {}).get("enabled", False):
         t_cfg = tasks_cfg["recolector_piedras"]
         coords = config_mgr.coordinates.get("recolector", {})
@@ -155,33 +186,58 @@ def build_bot(config_dir: str = None) -> TaskScheduler:
             description=t_cfg.get("description", "Recolector Piedras")
         ))
 
+    # 9. Recolección de Edificios del Imperio
+    if tasks_cfg.get("imperium_buildings", {}).get("enabled", True):
+        t_cfg = tasks_cfg.get("imperium_buildings", {})
+        delay_sec = config_mgr.parse_delay_string(t_cfg.get("initial_delay", ""))
+        scheduler.add_task(ImperiumCollectTask(
+            interval_seconds=t_cfg.get("interval_seconds", 180),
+            initial_delay=delay_sec,
+            description=t_cfg.get("description", "Recolección de Edificios del Imperio")
+        ))
+
     return scheduler
 
 
 def main():
-    parser = argparse.ArgumentParser(description="MafiaBattle Autonomous Engine")
-    parser.add_argument("--dry-run", action="store_true", help="Cargar configuración y listar tareas sin ejecutar clicks.")
-    parser.add_argument("--status", action="store_true", help="Mostrar estado y tiempos de espera de tareas.")
+    parser = argparse.ArgumentParser(description="MafiaBattle Autonomous Engine (Enfoque A & C)")
+    parser.add_argument("--mode", choices=["bidi", "gui"], default="bidi", help="Modo de ejecución: 'bidi' (segundo plano BiDi) o 'gui' (PyAutoGUI físico).")
+    parser.add_argument("--dry-run", action="store_true", help="Cargar configuración y listar tareas sin ejecutar acciones.")
+    parser.add_argument("--status", action="store_true", help="Mostrar estado de conexión, stats del jugador y tiempos de espera de tareas.")
     args = parser.parse_args()
 
-    print("=" * 65)
-    print("        MAFIABATTLE AUTONOMOUS BOT — MOTOR REFACTORIZADO POO")
-    print("=" * 65)
+    print("=" * 68)
+    print("        MAFIABATTLE AUTONOMOUS BOT — ENFOQUE A & C (BIDI + DOM)")
+    print("=" * 68)
 
-    scheduler = build_bot()
+    scheduler = build_bot(mode=args.mode)
 
     if args.dry_run or args.status:
         now = time.time()
+        print(f"\n📡 Modo de Ejecución: {'SEGUNDO PLANO BIDI (Enfoque A/C)' if scheduler.input_ctrl.is_bidi_mode else 'LEGACY GUI'}")
+
+        if scheduler.input_ctrl.is_bidi_mode and scheduler.input_ctrl.bridge:
+            stats = scheduler.input_ctrl.bridge.get_player_stats()
+            print("\n📊 Estadísticas del Jugador (en tiempo real desde el juego):")
+            print(f"  • Salud:            {stats.get('health', 'N/A')}")
+            print(f"  • Efectivo:         ${stats.get('cash', 0):,}")
+            print(f"  • Banco:            ${stats.get('bank', 0):,}")
+            print(f"  • Diamantes:        {stats.get('diamonds', 0):,}")
+            print(f"  • Munición:         {stats.get('ammunition', 0):,}")
+            print(f"  • Timers Activos:   {stats.get('timers_active', 0)} / {stats.get('timers_max', 8)}")
+
         print(f"\n📋 Tareas registradas en el Planificador:")
         for t in scheduler.tasks + scheduler.high_priority_tasks:
             espera = t.time_until_next_run(now, scheduler.state_mgr)
             print(f"  • {t.name:<25} | Intervalo: {t.interval_seconds}s | Próxima ejecución en: {espera:.1f}s")
         print("\n✅ Verificación completada con éxito.")
+
+        scheduler.stop()
         sys.exit(0)
 
-    # Manejo de señales de terminación
+    # Manejo seguro de señales de terminación
     def sigint_handler(sig, frame):
-        print("\n🛑 Señal recibida. Deteniendo el bot de forma segura...")
+        print("\n🛑 Señal de interrupción recibida. Deteniendo bot de forma segura...")
         scheduler.stop()
         sys.exit(0)
 

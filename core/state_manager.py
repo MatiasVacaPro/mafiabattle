@@ -88,6 +88,11 @@ class StateManager:
         with self._lock:
             return self.last_runs.get(task_name, 0.0)
 
+    def get_district_index(self, district_name: str) -> int:
+        """Obtiene el índice secuencial actual para un distrito."""
+        with self._lock:
+            return self.district_indices.get(district_name, 0)
+
     def get_and_increment_district_index(self, district_name: str, options_count: int) -> int:
         """Obtiene el índice secuencial actual para un distrito y lo incrementa."""
         with self._lock:

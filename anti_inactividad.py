@@ -92,6 +92,21 @@ def sleep_exacto(segundos, evento_activo=None):
         time.sleep(min(0.2, restante))
 
 
+def verificar_permiso_grabacion_pantalla():
+    """
+    Comprueba si macOS ha concedido permiso de Grabación de Pantalla (Screen Recording).
+    Si no está concedido, macOS solo devuelve el fondo de escritorio (wallpaper),
+    haciendo que el OCR sea ciego a ventanas y modales.
+    """
+    try:
+        import Quartz
+        if hasattr(Quartz, "CGPreflightScreenCaptureAccess"):
+            return Quartz.CGPreflightScreenCaptureAccess()
+    except Exception:
+        pass
+    return True
+
+
 # =====================================================================
 # DETECCIÓN OCR Y VISUAL
 # =====================================================================
@@ -121,13 +136,16 @@ def es_color_boton_reload(img_crop):
     return False
 
 
-def analizar_pantalla_idle(guardar_debug=False):
+def analizar_pantalla_idle(guardar_debug=False, imagen=None):
     """
-    Captura la región del modal y ejecuta OCR para detectar el aviso de inactividad.
+    Captura la región del modal (o usa 'imagen' si se provee) y ejecuta OCR para detectar el aviso de inactividad.
     Retorna: (detectado: bool, coord_click: tuple, texto_detectado: str)
     """
     rx, ry, rw, rh = REGION_IDLE_MODAL
-    screenshot = pg.screenshot(region=REGION_IDLE_MODAL)
+    if imagen is not None:
+        screenshot = imagen
+    else:
+        screenshot = pg.screenshot(region=REGION_IDLE_MODAL)
     
     texto_detectado = ""
     coord_click = COORD_IDLE_RELOAD_BTN
@@ -150,7 +168,10 @@ def analizar_pantalla_idle(guardar_debug=False):
                 results = request.results()
                 parts = []
                 for obs in results:
-                    cand = obs.topCandidates_(1)[0].string()
+                    candidates = obs.topCandidates_(1)
+                    if not candidates:
+                        continue
+                    cand = candidates[0].string()
                     parts.append(cand)
                     bbox = obs.boundingBox()
                     bx = int(bbox.origin.x * rw + rx)
@@ -179,8 +200,8 @@ def analizar_pantalla_idle(guardar_debug=False):
     if any(p in texto_detectado for p in PALABRAS_CLAVE_IDLE):
         detectado = True
 
-    # 4. Respaldo por color del botón cian
-    if not detectado:
+    # 4. Respaldo por color del botón cian (solo si se captura de pantalla completa/en vivo)
+    if not detectado and imagen is None:
         crop_btn = pg.screenshot(region=REGION_IDLE_RELOAD_BTN)
         if es_color_boton_reload(crop_btn):
             detectado = True
@@ -207,40 +228,50 @@ def analizar_pantalla_idle(guardar_debug=False):
 # =====================================================================
 def ejecutar_recuperacion_idle(coord_click=COORD_IDLE_RELOAD_BTN, lock=None):
     """
-    Ejecuta la reactivación completa:
-    1. Click de enfoque y doble click en botón RELOAD.
+    Ejecuta la reactivación completa con doble mecanismo seguro:
+    1. Click de enfoque y doble click en botón RELOAD (838, 688).
     2. Confirmación con tecla Enter.
-    3. Espera de 10 segundos para la carga del juego.
-    4. Secuencia de login y retorno a pantalla principal.
+    3. Verificación de seguridad: si el modal persiste tras 3s, fuerza recarga directa con Cmd+R.
+    4. Espera de pantalla de carga del juego.
+    5. Secuencia de login (Enter) y retorno a pantalla principal (Escape).
     """
     def _accion():
         log_msg("Anti-Inactividad", "ejecutando", f"Pulsando botón RELOAD (Doble Click) en {coord_click}...")
         
-        # Click inicial de enfoque en la ventana
+        # 1. Click inicial de enfoque en la ventana del navegador
         pg.click(x=coord_click[0], y=coord_click[1])
         sleep_exacto(0.2)
         
-        # Doble click de reactivación en el botón
+        # 2. Doble click de reactivación en el botón RELOAD
         pg.doubleClick(x=coord_click[0], y=coord_click[1])
         sleep_exacto(0.5)
         pg.press('enter')
 
-        # Espera de 10 segundos de pantalla de carga
-        log_msg("Anti-Inactividad", "espera", "Esperando 10s para pantalla de carga del juego...")
-        sleep_exacto(10.0)
+        # 3. Verificación de seguridad: comprobar si el aviso persiste tras el click
+        sleep_exacto(3.0)
+        sigue_idle, _, _ = analizar_pantalla_idle(guardar_debug=False)
+        if sigue_idle:
+            log_msg("Anti-Inactividad", "alerta", "Aviso aún presente. Ejecutando recarga directa con Cmd+R...")
+            pg.hotkey('command', 'r')
+            sleep_exacto(1.5)
+            pg.press('enter')
 
-        # Secuencia de restauración de sesión y ciudad
+        # 4. Espera de pantalla de carga del juego
+        log_msg("Anti-Inactividad", "espera", "Esperando 8s para recarga y conexión del juego...")
+        sleep_exacto(8.0)
+
+        # 5. Secuencia de restauración de sesión y ciudad
         log_msg("Anti-Inactividad", "ejecutando", "Ejecutando secuencia de login y retorno a pantalla principal...")
         pg.press('enter')
-        sleep_exacto(3.0)
+        sleep_exacto(2.5)
         pg.press('enter')
         sleep_exacto(2.0)
 
-        # Limpiar ventanas emergentes / modales residuales
+        # 6. Limpiar ventanas emergentes / modales residuales
         pg.press('escape')
-        sleep_exacto(0.8)
+        sleep_exacto(0.5)
         pg.press('escape')
-        sleep_exacto(0.8)
+        sleep_exacto(0.5)
         pg.press('escape')
         sleep_exacto(0.5)
 
@@ -256,16 +287,33 @@ def ejecutar_recuperacion_idle(coord_click=COORD_IDLE_RELOAD_BTN, lock=None):
 # =====================================================================
 # BUCLE PRINCIPAL DE MONITOREO
 # =====================================================================
-def bucle_anti_inactividad(lock=None, verbose=False):
+def bucle_anti_inactividad(lock=None, verbose=False, max_iteraciones=None, callback_iteracion=None):
     """
     Bucle continuo a ~1 FPS para detectar y solucionar la inactividad automáticamente.
+    Emite latidos periódicos para confirmar iteración activa en consola.
     """
+    if not verificar_permiso_grabacion_pantalla():
+        log_msg("Anti-Inactividad", "alerta", "⚠️ ATENCIÓN: Permiso de 'Grabación de pantalla' NO concedido en macOS.")
+        log_msg("Anti-Inactividad", "alerta", "macOS solo muestra el fondo de pantalla y bloquea la detección de ventanas.")
+        log_msg("Anti-Inactividad", "alerta", "Activa tu Terminal/Ghostty en: Ajustes del Sistema > Privacidad y seguridad > Grabación de pantalla.")
+
     log_msg("Anti-Inactividad", "activo", "Monitor OCR activo (~1 FPS) para detectar 'Idle too long' / RELOAD...")
+    contador_iteraciones = 0
+
     while True:
+        contador_iteraciones += 1
         try:
             detectado, coord_click, texto = analizar_pantalla_idle(guardar_debug=False)
-            if verbose and texto:
-                log_msg("Anti-Inactividad", "activo", f"Escaneo: '{texto}'")
+
+            if callback_iteracion:
+                callback_iteracion(contador_iteraciones, texto)
+
+            if verbose:
+                info_scan = f"'{texto}'" if texto else "[Sin texto en región]"
+                log_msg("Anti-Inactividad", "activo", f"Escaneo #{contador_iteraciones}: {info_scan}")
+            elif contador_iteraciones % 10 == 0:
+                # Latido periódico cada 10 iteraciones (~10s) para que el usuario verifique actividad
+                log_msg("Anti-Inactividad", "activo", f"Monitor OCR activo (Iteración #{contador_iteraciones}) - Sin inactividad")
 
             if detectado:
                 log_msg("Anti-Inactividad", "alerta", f"⚠️ Detectado aviso de inactividad ('{texto.strip()}').")
@@ -273,6 +321,9 @@ def bucle_anti_inactividad(lock=None, verbose=False):
 
         except Exception as e:
             log_msg("Anti-Inactividad", "error", f"Error en bucle detector: {e}")
+
+        if max_iteraciones is not None and contador_iteraciones >= max_iteraciones:
+            break
 
         sleep_exacto(1.0)
 
