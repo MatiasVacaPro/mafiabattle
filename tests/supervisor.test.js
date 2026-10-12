@@ -3360,6 +3360,155 @@ test("daily gym respects hidden native detail and global gym countdowns", () => 
 	for (let i = 0; i < 5; i++) f.step();
 	expect(f.calls).toEqual([]);
 });
+for (const source of ["parent", "map", "room", "global"]) {
+	function unreadableGymTimer() {
+		if (source === "room") {
+			w.document
+				.querySelector("#dialog_gym_room")
+				.insertAdjacentHTML("beforeend", '<i data-cdtimer="unknown"></i>');
+		} else if (source === "global") {
+			w.document.body.insertAdjacentHTML(
+				"beforeend",
+				'<div id="timer_detail_countdown">Fitness at gym (<span data-cdtimer="unknown">?</span>)</div>',
+			);
+		}
+		const selector = {
+			parent: "#dialog_gym .timedetail i",
+			map: "#gym i",
+			room: "#dialog_gym_room i",
+			global: "#timer_detail_countdown span",
+		}[source];
+		const timer = w.document.querySelector(selector);
+		timer.setAttribute("data-cdtimer", "unknown");
+		return timer;
+	}
+	test(`daily gym blocks unreadable ${source} timer and recovers after native zero`, () => {
+		const f = dailyGymFixture();
+		const timer = unreadableGymTimer();
+		for (let i = 0; i < 6; i++) f.step();
+		expect(f.calls.filter((c) => c === "gym")).toHaveLength(0);
+		timer.setAttribute("data-cdtimer", "0");
+		for (let i = 0; i < 6; i++) f.step(31000);
+		expect(f.calls.filter((c) => c === "gym")).toHaveLength(1);
+	});
+	test(`daily gym revalidates unreadable cached ${source} timer through native navigation`, () => {
+		const f = dailyGymFixture();
+		const timer = unreadableGymTimer();
+		const control = w.document.querySelector(
+			source === "room" ? "#dialog_gym .gym" : "#open_gym",
+		);
+		control.addEventListener("click", () =>
+			timer.setAttribute("data-cdtimer", "0"),
+		);
+		for (let i = 0; i < 6; i++) f.step();
+		expect(f.calls).toEqual(["open", "gym"]);
+	});
+	test(`daily gym rechecks unreadable ${source} timer at final click`, () => {
+		const f = dailyGymFixture();
+		f.step();
+		f.step();
+		const button = w.document.querySelector(".fitness");
+		const nativeGet = button.getAttribute.bind(button);
+		button.getAttribute = (name) => {
+			if (name === "onclick") unreadableGymTimer();
+			return nativeGet(name);
+		};
+		f.step();
+		expect(f.calls).toEqual(["open"]);
+	});
+}
+test("daily gym bounds unreadable timer revalidation without exercising or replaying navigation", () => {
+	const f = dailyGymFixture();
+	w.document
+		.querySelector("#dialog_gym .timedetail i")
+		.setAttribute("data-cdtimer", "unknown");
+	let roomOpens = 0;
+	w.document
+		.querySelector("#dialog_gym .gym")
+		.addEventListener("click", () => roomOpens++);
+	for (let i = 0; i < 20; i++) f.step(100);
+	expect(f.calls).toEqual(["open"]);
+	expect(roomOpens).toBe(1);
+	expect(agent.snapshot().active).toBeNull();
+	for (let i = 0; i < 10; i++) f.step(100);
+	expect(f.calls).toEqual(["open"]);
+	expect(roomOpens).toBe(1);
+});
+for (const boundary of ["parent", "room"]) {
+	for (const gate of [
+		"empire",
+		"slots",
+		"daily cap",
+		"human",
+		"account",
+		"lease",
+	]) {
+		test(`daily gym unreadable ${boundary} revalidation rechecks ${gate} before navigation`, () => {
+			const f = dailyGymFixture();
+			w.document
+				.querySelector("#gym i")
+				.setAttribute("data-cdtimer", "unknown");
+			if (boundary === "room") f.step();
+			const control = w.document.querySelector(
+				boundary === "parent" ? "#open_gym" : "#dialog_gym .gym",
+			);
+			const nativeGet = control.getAttribute.bind(control);
+			let navigations = 0;
+			control.addEventListener("click", () => navigations++);
+			control.getAttribute = (name) => {
+				if (name === "onclick") {
+					if (gate === "empire") changeNativeEmpire(2);
+					if (gate === "slots") w.stats_timers = 8;
+					if (gate === "daily cap") {
+						w.document
+							.querySelector(".stat_sessions .progress")
+							.setAttribute("data-val", "2");
+						w.document.querySelector("#gym .exclamation").style.display =
+							"none";
+					}
+					if (gate === "human")
+						agent.handleUserEvent({ isTrusted: true, type: "keydown" });
+					if (gate === "account")
+						w.document.querySelector(".player1_username").textContent = "other";
+					if (gate === "lease") now += 30001;
+				}
+				return nativeGet(name);
+			};
+			f.step();
+			expect(navigations).toBe(0);
+			expect(f.calls.filter((c) => c === "gym")).toHaveLength(0);
+		});
+	}
+}
+test("daily gym unreadable receipt remains pending across reinjection and confirms only positive timer", () => {
+	const f = dailyGymFixture();
+	const original = w.document.querySelector(".fitness");
+	const button = original.cloneNode(true);
+	original.replaceWith(button);
+	let exercises = 0;
+	button.addEventListener("click", () => {
+		exercises++;
+		w.document.querySelector("#gym i").setAttribute("data-cdtimer", "unknown");
+	});
+	for (let i = 0; i < 5; i++) f.step();
+	expect(exercises).toBe(1);
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "gym_train").pending,
+	).toBe(true);
+	agent.stop();
+	agent = w.eval(`(${source})`)(fixtureConfig);
+	for (let i = 0; i < 5; i++) f.step(31000);
+	expect(exercises).toBe(1);
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "gym_train").pending,
+	).toBe(true);
+	w.document.querySelector("#gym i").setAttribute("data-cdtimer", "300");
+	f.step();
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "gym_train").pending,
+	).toBe(false);
+	expect(exercises).toBe(1);
+});
 test("daily gym waits for a partial lazy response without reopening its dialog", () => {
 	const f = dailyGymFixture({ lazy: true });
 	w.document

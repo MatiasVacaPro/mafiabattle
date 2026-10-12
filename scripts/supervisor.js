@@ -720,8 +720,12 @@ function createMafiaAgent(config) {
 			);
 		}
 		if (spec.kind === "gym") {
+			const beforeSessions = number(before.sessions),
+				afterSessions = number(after.sessions);
 			return (
-				number(after.sessions) > number(before.sessions) ||
+				(beforeSessions !== null &&
+					afterSessions !== null &&
+					afterSessions > beforeSessions) ||
 				(!before.gym_timer && after.gym_timer)
 			);
 		}
@@ -897,6 +901,12 @@ function createMafiaAgent(config) {
 			spec?.kind === "gym" &&
 			(!gymReady(active?.policy || {}) ||
 				!timersReady(query("#dialog_gym_room")))
+		)
+			return false;
+		if (
+			active?.kind === "gym" &&
+			action === "open_dialog" &&
+			!gymReady(active.policy, true)
 		)
 			return false;
 		if (config.dry_run) {
@@ -1925,20 +1935,29 @@ function createMafiaAgent(config) {
 		}
 		return false;
 	}
-	function gymTimerActive() {
-		return (
-			all(
-				"#imperium #gym [data-cdtimer], #gym [data-cdtimer], #dialog_gym .timedetail [data-cdtimer], #dialog_gym_room [data-cdtimer]",
-			).some((el) => number(el.getAttribute("data-cdtimer")) > 0) ||
-			activeTimers().entries.some(
-				(entry) =>
-					/\b(?:gym|fitness|gimnasio)\b/i.test(entry.label) &&
-					entry.remaining_seconds > 0,
-			)
+	function gymTimerState() {
+		const remaining = all(
+			"#gym [data-cdtimer], #dialog_gym [data-cdtimer], #dialog_gym_room [data-cdtimer]",
+		).map((el) => number(el.getAttribute("data-cdtimer")));
+		remaining.push(
+			...activeTimers()
+				.entries.filter((entry) =>
+					/\b(?:gym|fitness|gimnasio)\b/i.test(entry.label),
+				)
+				.map((entry) => entry.remaining_seconds),
 		);
+		if (remaining.some((seconds) => seconds > 0)) return "active";
+		if (remaining.some((seconds) => seconds === null || seconds < 0))
+			return "unknown";
+		return "idle";
+	}
+	function gymTimerActive() {
+		// Only positive native countdowns acknowledge a pending exercise.
+		return gymTimerState() === "active";
 	}
 	function gymReady(policy, inspect = false) {
 		if (currentEmpire() !== (policy.empire || 1)) return false;
+		const timerState = gymTimerState();
 		const sessions = query("#dialog_gym .stat_sessions .progress");
 		const used = number(sessions?.getAttribute("data-val")),
 			max = number(sessions?.getAttribute("data-max"));
@@ -1946,7 +1965,7 @@ function createMafiaAgent(config) {
 			? number(query(policy.energy_selector)?.getAttribute("data-val"))
 			: null;
 		return (
-			!gymTimerActive() &&
+			(timerState === "idle" || (inspect && timerState === "unknown")) &&
 			!records.gym_train?.pending &&
 			((used !== null && max !== null && used < max) ||
 				(inspect &&
@@ -3193,6 +3212,17 @@ function createMafiaAgent(config) {
 				if (now() - active.openedAt > config.ack_timeout_ms) {
 					issues[policy.name] = "Daily gym sessions did not load";
 					active.phase = "close";
+				}
+				return false;
+			}
+			if (gymTimerState() === "unknown" && gymReady(policy, true)) {
+				// One native parent/room read per throttled attempt can refresh stale
+				// cached metadata. Never exercise until every identified timer is idle.
+				if (!displayed(query("#dialog_gym_room")))
+					return openStep("#dialog_gym .button.gym", "#dialog_gym_room");
+				if (now() - active.openedAt > config.ack_timeout_ms) {
+					active.phase = "close";
+					return closeOwned();
 				}
 				return false;
 			}
