@@ -497,6 +497,15 @@ function createMafiaAgent(config) {
 							),
 						).length
 					: null,
+			weed_offer_key:
+				spec.kind === "weed_offer_reject"
+					? weedOfferInfo({ root: "#dialog_weedfarm_offers" })?.key || null
+					: null,
+			weed_offer_available:
+				spec.kind === "weed_offer_reject"
+					? enabled(query(spec.offer_indicator))
+					: null,
+			gym_timer: spec.kind === "gym" ? gymTimerActive() : false,
 			primary_empire: !!query("#imperium #moneypress"),
 			rootVisible: displayed(root),
 			sessions:
@@ -600,6 +609,12 @@ function createMafiaAgent(config) {
 			);
 		if (spec.kind === "weed_offer")
 			return before.rootVisible && !after.rootVisible;
+		if (spec.kind === "weed_offer_reject")
+			return (
+				after.command_confirmed &&
+				(before.weed_offer_key !== after.weed_offer_key ||
+					(before.weed_offer_available && !after.weed_offer_available))
+			);
 		if (spec.kind === "cigar_offer")
 			return (
 				before.cigar_stock !== null &&
@@ -619,8 +634,7 @@ function createMafiaAgent(config) {
 		if (spec.kind === "gym") {
 			return (
 				number(after.sessions) > number(before.sessions) ||
-				(!before.busy && after.busy) ||
-				(before.visible && !after.visible)
+				(!before.gym_timer && after.gym_timer)
 			);
 		}
 		if (spec.kind === "production") {
@@ -752,6 +766,8 @@ function createMafiaAgent(config) {
 		if (spec?.kind === "collector" && !collectorReady(spec, el)) return false;
 		if (spec?.kind === "weed_offer" && !weedOfferApproved(spec, true))
 			return false;
+		if (spec?.kind === "weed_offer_reject" && !weedOfferDenied(spec, true))
+			return false;
 		if (spec?.kind === "cigar_offer" && !cigarOfferApproved(spec)) return false;
 		if (spec?.kind === "empire_flight") {
 			observeFlightResponses();
@@ -772,6 +788,12 @@ function createMafiaAgent(config) {
 			return false;
 		if (!actionSlotsReady(spec, el)) return false;
 		if (spec && !available(spec, el)) return false;
+		if (
+			spec?.kind === "gym" &&
+			(!gymReady(active?.policy || {}) ||
+				!timersReady(query("#dialog_gym_room")))
+		)
+			return false;
 		if (config.dry_run) {
 			plans.push({
 				module,
@@ -1112,6 +1134,7 @@ function createMafiaAgent(config) {
 							"helicopter",
 							"collector",
 							"production",
+							"gym",
 							"empire",
 						].includes(p.kind),
 				)
@@ -1786,7 +1809,19 @@ function createMafiaAgent(config) {
 		}
 		return false;
 	}
-	function gymReady(policy) {
+	function gymTimerActive() {
+		return (
+			all(
+				"#imperium #gym [data-cdtimer], #gym [data-cdtimer], #dialog_gym .timedetail [data-cdtimer], #dialog_gym_room [data-cdtimer]",
+			).some((el) => number(el.getAttribute("data-cdtimer")) > 0) ||
+			activeTimers().entries.some(
+				(entry) =>
+					/\b(?:gym|fitness|gimnasio)\b/i.test(entry.label) &&
+					entry.remaining_seconds > 0,
+			)
+		);
+	}
+	function gymReady(policy, inspect = false) {
 		const sessions = query("#dialog_gym .stat_sessions .progress");
 		const used = number(sessions?.getAttribute("data-val")),
 			max = number(sessions?.getAttribute("data-max"));
@@ -1794,9 +1829,16 @@ function createMafiaAgent(config) {
 			? number(query(policy.energy_selector)?.getAttribute("data-val"))
 			: null;
 		return (
-			used !== null &&
-			max !== null &&
-			used < max &&
+			!gymTimerActive() &&
+			!records.gym_train?.pending &&
+			((used !== null && max !== null && used < max) ||
+				(inspect &&
+					(!sessions ||
+						enabled(
+							query(
+								"#imperium #gym .collect.exclamation, #gym .collect.exclamation",
+							),
+						)))) &&
 			slotsAvailable(reservedSlots(policy.reserve_slots)) &&
 			(!policy.energy_selector ||
 				(energy !== null && energy >= policy.minimum_energy))
@@ -1917,10 +1959,13 @@ function createMafiaAgent(config) {
 		return null;
 	}
 	function resourceReady(spec) {
+		if (spec.task === "weed_offer" && records.weed_offer_reject?.pending)
+			return false;
 		if (
 			spec.task === "weed_offer" &&
 			transportPolicy?.weed_reserve_enabled !== false &&
-			transportPlanner?.getWeedReserve() > 0
+			transportPlanner?.getWeedReserve() > 0 &&
+			weedOfferInfo(spec)?.buyer !== "police"
 		)
 			return false;
 		if (spec.empire && currentEmpire() !== spec.empire) return false;
@@ -2023,6 +2068,7 @@ function createMafiaAgent(config) {
 		const info = weedOfferInfo({ ...spec, root: "#dialog_weedfarm_offers" });
 		if (!info?.allowed) return false;
 		if (
+			info.buyer !== "police" &&
 			transportPlanner?.isWeedReserved(
 				info.weight,
 				number(globalThis.weedfarm_capacity),
@@ -2045,6 +2091,23 @@ function createMafiaAgent(config) {
 		)
 			return false;
 		return info.reward === "diamonds" ? diamonds && !cash : cash && !diamonds;
+	}
+	function weedOfferDenied(spec, confirmation = false) {
+		const info = weedOfferInfo({ ...spec, root: "#dialog_weedfarm_offers" });
+		if (info?.buyer !== "police" || info.reward !== "cash") return false;
+		if (!confirmation) return true;
+		const modal = query("#dialog_notification.notif_weed_offer_deny");
+		const text = query(".textbox", modal)?.textContent || "";
+		const quotes = [
+			...text.matchAll(/(\d[\d\s.,]*)\s*(?:cash|dinero|efectivo)\b/gi),
+		];
+		return (
+			displayed(modal) &&
+			active?.weedOfferKey === info.key &&
+			!/\b(?:diamonds?|diamantes?)\b/i.test(text) &&
+			quotes.length === 1 &&
+			number(quotes[0][1].replace(/[^\d]/g, "")) === info.value
+		);
 	}
 	function blockWeedOffer(spec) {
 		const info = weedOfferInfo({ ...spec, root: "#dialog_weedfarm_offers" });
@@ -2094,14 +2157,22 @@ function createMafiaAgent(config) {
 	function resourceStep() {
 		const { spec, policy } = active;
 		if (spec.task === "weed_offer") {
-			const modal = query("#dialog_notification.notif_weed_offer_accept");
+			const denial = active.weedOfferAction === "reject";
+			const modal = query(
+				`#dialog_notification.notif_weed_offer_${denial ? "deny" : "accept"}`,
+			);
 			if (displayed(modal)) {
-				if (!weedOfferApproved(spec, true)) return blockWeedOffer(spec);
+				if (
+					!(denial
+						? weedOfferDenied(spec, true)
+						: weedOfferApproved(spec, true))
+				)
+					return blockWeedOffer(spec);
 				const button = query(".button.first", modal);
 				if (
-					!/cmd\s*\(\s*['"]weedfarm:acceptoffer['"]\s*\)/.test(
-						button?.getAttribute("onclick") || "",
-					)
+					!new RegExp(
+						`cmd\\s*\\(\\s*['"]weedfarm:${denial ? "reject" : "accept"}offer['"]\\s*\\)`,
+					).test(button?.getAttribute("onclick") || "")
 				) {
 					issues[spec.id] = "Weed confirmation contract changed";
 					state = "WAITING_FOR_DIALOG";
@@ -2109,10 +2180,27 @@ function createMafiaAgent(config) {
 				}
 				const confirmation = {
 					...spec,
+					...(denial
+						? {
+								id: `${spec.id}_reject`,
+								kind: "weed_offer_reject",
+								require_server_ack: true,
+								expected_command: "weedfarm:rejectoffer",
+							}
+						: {}),
 					root: "#dialog_notification",
 					selector: "#dialog_notification .button.first",
 				};
-				if (click(button, policy.name, "accept_weed_offer", confirmation)) {
+				if (
+					click(
+						button,
+						policy.name,
+						`${denial ? "reject" : "accept"}_weed_offer`,
+						confirmation,
+					)
+				) {
+					if (denial)
+						records[spec.id] = { next: now() + spec.cooldown_seconds * 1000 };
 					active.phase = "close";
 					return true;
 				}
@@ -2202,9 +2290,17 @@ function createMafiaAgent(config) {
 			return click(candidate.el, policy.name, "harvest_weed", candidate.spec);
 		}
 		if (spec.task === "weed_offer") {
-			if (!weedOfferApproved(spec)) return blockWeedOffer(spec);
+			const denial = weedOfferDenied(spec);
+			if (!denial && !weedOfferApproved(spec)) return blockWeedOffer(spec);
+			if (denial && !enabled(query("#dialog_weedfarm_offers .button.no")))
+				return blockWeedOffer(spec);
+			active.weedOfferAction = denial ? "reject" : "accept";
 			active.weedOfferKey = weedOfferInfo(spec).key;
-			return openStep(spec.selector, "#dialog_notification");
+			return openStep(
+				denial ? "#dialog_weedfarm_offers .button.no" : spec.selector,
+				"#dialog_notification",
+				`#dialog_notification.notif_weed_offer_${denial ? "deny" : "accept"}`,
+			);
 		}
 		if (spec.task === "home_return" || spec.task === "empire_flight") {
 			const el = homeReturnButton(spec);
@@ -2746,7 +2842,7 @@ function createMafiaAgent(config) {
 		}
 		if (
 			policy.kind === "gym" &&
-			gymReady(policy) &&
+			gymReady(policy, true) &&
 			(enabled(query(policy.open_selector)) ||
 				displayed(query("#dialog_gym")) ||
 				displayed(query("#dialog_gym_room")))
@@ -2885,6 +2981,20 @@ function createMafiaAgent(config) {
 		if (kind === "criminal") return criminalStep();
 		if (kind === "transport") return transportStep();
 		if (kind === "gym") {
+			if (
+				!displayed(query("#dialog_gym")) &&
+				!displayed(query("#dialog_gym_room"))
+			)
+				return openStep(policy.open_selector, "#dialog_gym");
+			if (!query("#dialog_gym .stat_sessions .progress")) {
+				if (!displayed(query("#dialog_gym")))
+					return openStep(policy.open_selector, "#dialog_gym");
+				if (now() - active.openedAt > config.ack_timeout_ms) {
+					issues[policy.name] = "Daily gym sessions did not load";
+					active.phase = "close";
+				}
+				return false;
+			}
 			if (!gymReady(policy)) {
 				active.phase = "close";
 				return closeOwned();
@@ -3257,7 +3367,17 @@ function createMafiaAgent(config) {
 				state = "WAITING_FOR_DIALOG";
 				return;
 			}
-			for (const policy of policies.filter((p) => p.enabled)) {
+			const scheduledPolicies = policies.filter((p) => p.enabled);
+			const gymIndex = scheduledPolicies.findIndex((p) => p.kind === "gym");
+			const criminalIndex = scheduledPolicies.findIndex(
+				(p) => p.kind === "criminal",
+			);
+			// Preserve existing priorities; give daily gym a chance before crime fills slots.
+			if (criminalIndex >= 0 && gymIndex > criminalIndex) {
+				const [gymPolicy] = scheduledPolicies.splice(gymIndex, 1);
+				scheduledPolicies.splice(criminalIndex, 0, gymPolicy);
+			}
+			for (const policy of scheduledPolicies) {
 				try {
 					if (policy.kind === "helicopter" && collectHelicopter(policy)) return;
 					if (policy.kind === "collector" && collector(policy)) return;
@@ -3330,6 +3450,13 @@ function createMafiaAgent(config) {
 				kind: "production",
 			})),
 			...(policy.scheduled || []).map((spec) => ({ ...spec, kind: spec.task })),
+			...(policy.scheduled || [])
+				.filter((spec) => spec.task === "weed_offer")
+				.map((spec) => ({
+					...spec,
+					id: `${spec.id}_reject`,
+					kind: "weed_offer_reject",
+				})),
 			...(policy.games || []).map((spec) => ({ ...spec, kind: spec.game })),
 			...(policy.kind === "gym"
 				? [

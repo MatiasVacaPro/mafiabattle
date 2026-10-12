@@ -175,7 +175,7 @@
 			"enabled": true,
 			"open_selector": "#imperium #gym .tip",
 			"room": 4,
-			"reserve_slots": 1,
+			"reserve_slots": 0,
 			"energy_selector": null,
 			"minimum_energy": 1
 		},

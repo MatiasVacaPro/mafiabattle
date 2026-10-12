@@ -1687,6 +1687,160 @@ function weedSafetyFixture(buyer, reward = "cash") {
 		},
 	};
 }
+function policeDenialFixture() {
+	const f = weedSafetyFixture("police");
+	f.root.insertAdjacentHTML(
+		"beforeend",
+		'<button class="button no">Deny</button>',
+	);
+	let callback,
+		rejected = 0;
+	w.jQuery = () => ({
+		on: (_event, fn) => {
+			callback = fn;
+		},
+		off: () => {},
+	});
+	f.root.querySelector(".no").addEventListener("click", () => {
+		f.modal.className = "dialog notif_weed_offer_deny";
+		f.modal.querySelector("p").textContent =
+			"Are you sure you want to deny 100 cash for this offer?";
+		f.modal
+			.querySelector(".first")
+			.setAttribute(
+				"onclick",
+				"cmd('weedfarm:rejectoffer'); close_dialog('weedfarm_offers'); close_dialog('notification');",
+			);
+		f.modal.style.display = "block";
+	});
+	f.modal.querySelector(".first").addEventListener("click", () => {
+		rejected++;
+		f.root.style.display = "none";
+		f.modal.style.display = "none";
+	});
+	return {
+		...f,
+		rejected: () => rejected,
+		ack: (command = "weedfarm:rejectoffer") =>
+			callback({}, { status: 200 }, { url: `/cmd/?c=${command}` }),
+	};
+}
+test("police cash denial uses native confirmation and requires acknowledgement plus offer transition", () => {
+	const f = policeDenialFixture();
+	for (let i = 0; i < 3; i++) f.step();
+	expect(f.rejected()).toBe(1);
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "weed_offer_reject").pending,
+	).toBe(true);
+	f.ack("weedfarm:acceptoffer");
+	f.step();
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "weed_offer_reject").pending,
+	).toBe(true);
+	f.ack();
+	f.step();
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "weed_offer_reject").pending,
+	).toBe(true);
+	f.root.querySelector(".offer_character").className = "offer_character";
+	f.step();
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "weed_offer_reject").pending,
+	).toBe(false);
+});
+test("police denial rechecks changed offers and respects a human pause", () => {
+	const f = policeDenialFixture();
+	f.step();
+	f.step();
+	agent.handleUserEvent({ isTrusted: true, type: "keydown" });
+	f.step();
+	expect(f.rejected()).toBe(0);
+	now += 15000;
+	f.root.querySelector(".offer_character").className = "offer_character truck";
+	f.step();
+	expect(f.rejected()).toBe(0);
+});
+test("police denial timeout and reinjection preserve uncertain receipt without replay", () => {
+	const f = policeDenialFixture();
+	for (let i = 0; i < 3; i++) f.step();
+	expect(f.rejected()).toBe(1);
+	now += 1200000;
+	agent.heartbeat();
+	agent.stop();
+	delete w.__mafiaBot;
+	agent = w.eval(`(${source})`)(fixtureConfig);
+	agent.heartbeat(false);
+	for (let i = 0; i < 8; i++) f.step();
+	expect(f.rejected()).toBe(1);
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "weed_offer_reject").pending,
+	).toBe(true);
+});
+test("police denial blocks changed confirmation amounts", () => {
+	const f = policeDenialFixture();
+	f.step();
+	f.step();
+	f.modal.querySelector("p").textContent = "Deny 101 cash for this offer?";
+	f.step();
+	expect(f.rejected()).toBe(0);
+});
+test("police denial leaves an unrecognized final command untouched", () => {
+	const f = policeDenialFixture();
+	f.step();
+	f.step();
+	f.modal
+		.querySelector(".first")
+		.setAttribute("onclick", "cmd('weedfarm:acceptoffer');");
+	f.step();
+	expect(f.rejected()).toBe(0);
+	expect(agent.snapshot().state).toBe("WAITING_FOR_DIALOG");
+});
+test("unknown weed offers never open native denial", () => {
+	const f = policeDenialFixture();
+	f.root.querySelector(".offer_character").className =
+		"offer_character stranger";
+	for (let i = 0; i < 4; i++) f.step();
+	expect(f.modal.style.display).toBe("none");
+	expect(f.rejected()).toBe(0);
+});
+test("police cash denial remains possible with transport weed reservation enabled", () => {
+	const f = policeDenialFixture();
+	agent.stop();
+	delete w.__mafiaBot;
+	const key = "mafia-bidi-state-v1",
+		saved = JSON.parse(w.sessionStorage.getItem(key));
+	saved.transport = {
+		order: {
+			key: "weed",
+			rows: [
+				{
+					orderId: "1",
+					type: "weed",
+					required: 1461.6,
+					donated: 0,
+					remaining: 1461.6,
+				},
+			],
+			deadline_at: now + 864000000,
+		},
+	};
+	w.sessionStorage.setItem(key, JSON.stringify(saved));
+	agent = w.eval(`(${source})`)({
+		...fixtureConfig,
+		policies: [
+			{
+				name: "transport_manager",
+				kind: "transport",
+				enabled: true,
+				weed_reserve_enabled: true,
+			},
+			...fixtureConfig.policies,
+		],
+	});
+	agent.heartbeat(false);
+	for (let i = 0; i < 4; i++) f.step();
+	expect(f.rejected()).toBe(1);
+});
 function cigarFixture(reward = "diamonds") {
 	const scheduled = JSON.parse(
 		readFileSync(
@@ -2155,6 +2309,190 @@ test("production opens, starts only with a free slot, and closes its own dialog"
 	agent.tick();
 	expect(produced).toBe(1);
 	expect(root.style.display).toBe("none");
+});
+function dailyGymFixture({
+	lazy = false,
+	used = 0,
+	max = 2,
+	criminal = false,
+} = {}) {
+	setup({
+		policies: [
+			...(criminal ? [criminalPolicy] : []),
+			{
+				name: "gym_trainer",
+				kind: "gym",
+				enabled: true,
+				room: 4,
+				reserve_slots: 0,
+				open_selector: "#open_gym",
+			},
+		],
+	});
+	const calls = [];
+	w.stats_health = 100;
+	w.stats_timers = 7;
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<button id="open_gym">Gym</button><div id="gym"><i data-cdtimer="0"></i><button class="collect exclamation">Available</button></div>',
+	);
+	const markup =
+		'<div class="dialog" id="dialog_gym" style="display:none"><div class="stat_sessions"><div class="progress" data-val="' +
+		used +
+		'" data-max="' +
+		max +
+		'"></div></div><div class="timedetail"><i data-cdtimer="0"></i></div><button class="button gym">Exercises</button><button class="close">Close</button></div><div class="dialog" id="dialog_gym_room" style="display:none"><div class="page_4 roompage"><button class="button fitness" onclick="if (!check_timers(1,$(this))) return; cmd(\'gym:fitness\',{\'room\':\'4\'});">Train</button></div><button class="close">Close</button></div>';
+	const load = () => {
+		if (w.document.querySelector("#dialog_gym")) return;
+		w.document.body.insertAdjacentHTML("beforeend", markup);
+		w.document
+			.querySelector("#dialog_gym .gym")
+			.addEventListener("click", () => {
+				w.document.querySelector("#dialog_gym").style.display = "none";
+				w.document.querySelector("#dialog_gym_room").style.display = "block";
+			});
+		for (const close of w.document.querySelectorAll(".dialog .close"))
+			close.addEventListener("click", () => {
+				close.parentElement.style.display = "none";
+			});
+		w.document.querySelector(".fitness").addEventListener("click", () => {
+			calls.push("gym");
+			const progress = w.document.querySelector(".stat_sessions .progress");
+			progress.setAttribute(
+				"data-val",
+				String(Number(progress.getAttribute("data-val")) + 1),
+			);
+			w.document.querySelector("#gym i").setAttribute("data-cdtimer", "300");
+			w.stats_timers = 8;
+		});
+	};
+	if (!lazy) load();
+	w.document.querySelector("#open_gym").addEventListener("click", () => {
+		calls.push("open");
+		load();
+		w.document.querySelector("#dialog_gym").style.display = "block";
+	});
+	if (criminal) {
+		w.document.body.insertAdjacentHTML(
+			"beforeend",
+			'<button id="go_crimes">Crime</button><div class="dialog" id="dialog_crimes" style="display:none"><div class="alllocations"><button class="item crimes_location_first">First</button></div><div class="subdialog crimes_location_first" style="display:none"><div class="crime_box" id="crime_1"><div class="progress" data-val="10" data-max="90"></div><button class="crime_button_small" onclick="if (!check_health(5,10)) return; if (!check_timers(1,$(this))) return; cmd(\'crime:perform\',{\'id\':\'1\'});">Crime</button></div></div></div>',
+		);
+		w.document.querySelector("#go_crimes").addEventListener("click", () => {
+			calls.push("crime");
+			w.document.querySelector("#dialog_crimes").style.display = "block";
+		});
+	}
+	return {
+		calls,
+		step: (ms = 20) => {
+			now += ms;
+			agent.heartbeat();
+		},
+		complete: () => {
+			w.document.querySelector("#gym i").setAttribute("data-cdtimer", "0");
+			w.stats_timers = 7;
+		},
+	};
+}
+test("daily gym loads absent DOM and takes the final free slot before criminal activities", () => {
+	const f = dailyGymFixture({ lazy: true, criminal: true });
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls.slice(0, 2)).toEqual(["open", "gym"]);
+});
+test("daily gym stops during native timer, repeats to cap and follows next-day reset", () => {
+	const f = dailyGymFixture();
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls.filter((c) => c === "gym")).toHaveLength(1);
+	w.stats_timers = 7;
+	for (let i = 0; i < 5; i++) f.step(31000);
+	expect(f.calls.filter((c) => c === "gym")).toHaveLength(1);
+	f.complete();
+	for (let i = 0; i < 5; i++) f.step(31000);
+	expect(f.calls.filter((c) => c === "gym")).toHaveLength(2);
+	f.complete();
+	w.document.querySelector("#gym .exclamation").style.display = "none";
+	for (let i = 0; i < 5; i++) f.step(31000);
+	expect(f.calls.filter((c) => c === "gym")).toHaveLength(2);
+	w.document
+		.querySelector(".stat_sessions .progress")
+		.setAttribute("data-val", "0");
+	w.document.querySelector("#gym .exclamation").style.display = "block";
+	for (let i = 0; i < 5; i++) f.step(31000);
+	expect(f.calls.filter((c) => c === "gym")).toHaveLength(3);
+});
+test("daily gym cannot confirm an unrelated busy overlay or hidden button", () => {
+	const f = dailyGymFixture();
+	w.document
+		.querySelector(".fitness")
+		.replaceWith(w.document.querySelector(".fitness").cloneNode(true));
+	for (let i = 0; i < 3; i++) f.step();
+	w.document
+		.querySelector("#dialog_gym_room .page_4")
+		.insertAdjacentHTML(
+			"beforeend",
+			'<div class="disabled_controls">Busy</div>',
+		);
+	w.document.querySelector(".fitness").style.display = "none";
+	f.step();
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "gym_train").pending,
+	).toBe(true);
+});
+test("daily gym rechecks native timer at the final click boundary", () => {
+	const f = dailyGymFixture();
+	f.step();
+	f.step();
+	const button = w.document.querySelector(".fitness");
+	const nativeGet = button.getAttribute.bind(button);
+	button.getAttribute = (name) => {
+		if (name === "onclick")
+			w.document.querySelector("#gym i").setAttribute("data-cdtimer", "300");
+		return nativeGet(name);
+	};
+	f.step();
+	expect(f.calls).toEqual(["open"]);
+});
+test("daily gym refreshes yesterday's capped data when native sessions signal returns", () => {
+	const f = dailyGymFixture({ used: 2 });
+	w.document
+		.querySelector("#open_gym")
+		.addEventListener("click", () =>
+			w.document
+				.querySelector(".stat_sessions .progress")
+				.setAttribute("data-val", "0"),
+		);
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual(["open", "gym"]);
+});
+test("daily gym respects hidden native detail and global gym countdowns", () => {
+	const f = dailyGymFixture();
+	w.document
+		.querySelector("#dialog_gym .timedetail i")
+		.setAttribute("data-cdtimer", "120");
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual([]);
+	w.document
+		.querySelector("#dialog_gym .timedetail i")
+		.setAttribute("data-cdtimer", "0");
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div id="timer_detail_countdown">Fitness at gym (<span data-cdtimer="120">2M</span>)</div>',
+	);
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual([]);
+});
+test("daily gym waits for a partial lazy response without reopening its dialog", () => {
+	const f = dailyGymFixture({ lazy: true });
+	w.document
+		.querySelector("#open_gym")
+		.addEventListener("click", () =>
+			w.document.querySelector(".stat_sessions .progress").remove(),
+		);
+	for (let i = 0; i < 6; i++) f.step();
+	expect(f.calls).toEqual(["open"]);
+	f.step(1100);
+	f.step();
+	expect(f.calls).toEqual(["open"]);
 });
 test("gym reads daily sessions and navigates to its configured exercise", () => {
 	setup({
