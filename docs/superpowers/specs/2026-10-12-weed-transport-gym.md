@@ -15,6 +15,7 @@ Alternativa evaluada: reducir globalmente ticks y esperas fijas; mejora latencia
 - Mantener reserva de cash 100000 y límite XTC 50000; Meth usa receta nativa actual.
 - Rechazo policial debe usar botón no observado y confirmación notif_weed_offer_deny / weedfarm:rejectoffer. Diamantes aceptados por ruta existente. Oferta desconocida no autoriza rechazos ni ventas.
 - Gimnasio usa ejercicio 4, máximo diario nativo y temporizador real; no simultáneos ni doble comando.
+- Afinidad de imperios confirmada: Weed/Meth/gimnasio y recolectores I solo en I; transporte/XTC/chatarra/bar/alcohol/almacén solo en II. Los diálogos precargados de otro imperio no autorizan una acción. Cuenta, salud, helicóptero y actividades del menú se validan por sus controles globales.
 - Restaurar event_objectives_enabled y weed_reserve_enabled; preservar política cigarros sin cash. Oferta policial en diamantes sigue permitida; compradores normales respetan reserva necesaria.
 - No borrar runtime, logs ni recibos; solo integrar archivos de esta intervención preservando ediciones concurrentes.
 
