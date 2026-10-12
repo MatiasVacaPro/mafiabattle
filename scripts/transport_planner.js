@@ -12,7 +12,8 @@ function parseTransportOrder(root, clock = Date.now) {
 	if (seconds === null) return null;
 	const rows = [...root.querySelectorAll(".warehouse .order")].map((row) => {
 		const button = row.querySelector(".button_green_128x44");
-		const id = button
+		const id = row.id.match(/^transportorder_(\d+)$/)?.[1];
+		const handlerId = button
 			?.getAttribute("onclick")
 			?.match(
 				/cmd\s*\(\s*['"]transport:donate['"]\s*,\s*\{\s*['"]orderid['"]\s*:\s*['"](\d+)['"]/,
@@ -34,12 +35,13 @@ function parseTransportOrder(root, clock = Date.now) {
 			type === "car" ? label.replace(/^\d+\s*X\s*/i, "").trim() : type;
 		if (
 			!id ||
-			row.id !== `transportorder_${id}` ||
+			(button && handlerId !== id) ||
 			required === null ||
 			donated === null ||
 			required <= 0 ||
 			donated < 0 ||
-			donated > required
+			donated > required ||
+			(donated < required && !button)
 		)
 			return null;
 		return {
@@ -206,6 +208,7 @@ function createMafiaTransportPlanner(policy, saved = {}, clock = Date.now) {
 			!valid() ||
 			freeSlots < 1 ||
 			!state.order.deliverable ||
+			state.order.rows.some((row) => row.type === "unknown") ||
 			!state.order.has_deliver_button
 		)
 			return null;

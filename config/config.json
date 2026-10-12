@@ -154,7 +154,7 @@
           }
         ],
         "reserve_slots": 1,
-        "event_objectives_enabled": false
+        "event_objectives_enabled": true
       },
       "anti_idle": {
         "enabled": true,
@@ -279,6 +279,7 @@
       },
       "gym_trainer": {
         "enabled": true,
+        "empire": 1,
         "open_selector": "#imperium #gym .tip",
         "room": 4,
         "reserve_slots": 0,
@@ -547,7 +548,7 @@
         "enabled": true,
         "scan_seconds": 300,
         "minimum_commit_seconds": 86400,
-        "weed_reserve_enabled": false
+        "weed_reserve_enabled": true
       }
     },
     "session_mode": "classic",

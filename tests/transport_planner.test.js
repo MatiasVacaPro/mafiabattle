@@ -4,11 +4,11 @@ import { Window } from "happy-dom";
 
 let w;
 afterEach(() => w?.happyDOM.abort());
-function fixture() {
+function fixture(file = "transport-order.html") {
 	w = new Window();
 	let now = 1000000;
 	w.document.body.innerHTML = readFileSync(
-		new URL("fixtures/transport-order.html", import.meta.url),
+		new URL(`fixtures/${file}`, import.meta.url),
 		"utf8",
 	);
 	const source = readFileSync(
@@ -35,6 +35,76 @@ function fixture() {
 		},
 	};
 }
+test("native completed rows without Donate controls preserve IDs and the incomplete Meth objective", () => {
+	const f = fixture("transport-order-completed-native.html");
+	expect(f.scan()).toBe(true);
+	const order = f.planner.snapshot().order;
+	expect(order.key).toBe("14269883,14269884,14269885,14269886");
+	expect(
+		order.rows.filter((row) => row.completed).map((row) => row.type),
+	).toEqual(["car", "weed", "xtc"]);
+	expect(order.rows[0].remaining).toBeCloseTo(288.89);
+	expect(f.planner.getWeedReserve()).toBe(0);
+	f.planner.observeStock("meth", 350);
+	expect(f.planner.planDonation(2).amount).toBeCloseTo(288.89);
+});
+test("native fully complete rows without Donate controls dispatch with one slot and preserve uncertain receipts", () => {
+	const f = fixture("transport-order-completed-native.html");
+	const row = w.document.querySelector(".order");
+	row.querySelector(".progress").setAttribute("data-val", "631.8");
+	row.querySelector(".button_green_128x44").remove();
+	expect(f.scan()).toBe(true);
+	expect(f.planner.planDispatch(2, 0)).toBeNull();
+	expect(f.planner.planDispatch(1, 1)).toBeNull();
+	expect(f.planner.planDispatch(2, 1)?.type).toBe("deliver");
+	const pending = {
+		kind: "donate",
+		orderId: "14269884",
+		resource: "meth",
+		before: 342.91,
+		amount: 288.89,
+	};
+	const restarted = w.createMafiaTransportPlanner(
+		{},
+		{ ...f.planner.serialize(), pending },
+		() => 1000000,
+	);
+	restarted.observeOrder(f.planner.snapshot().order);
+	expect(restarted.planDispatch(2, 1)).toBeNull();
+	expect(restarted.confirmDonation("14269884", 288.89)).toBe(true);
+	expect(restarted.planDispatch(2, 1)?.type).toBe("deliver");
+});
+test("completed native rows reject nonnumeric IDs, progress and present mismatched Donate handlers", () => {
+	const f = fixture("transport-order-completed-native.html");
+	const car = w.document.querySelector("#transportorder_14269883");
+	car.id = "transportorder_14269883_extra";
+	expect(f.scan()).toBe(false);
+	car.id = "transportorder_14269883";
+	car.querySelector(".progress").setAttribute("data-val", "NaN");
+	expect(f.scan()).toBe(false);
+	car.querySelector(".progress").setAttribute("data-val", "7");
+	car.insertAdjacentHTML(
+		"beforeend",
+		"<button class=\"button_green_128x44\" onclick=\"cmd('transport:donate',{'orderid':'999'},true)\">Donate</button>",
+	);
+	expect(f.scan()).toBe(false);
+});
+test("incomplete native rows still require matching Donate controls", () => {
+	const f = fixture("transport-order-completed-native.html");
+	w.document.querySelector(".button_green_128x44").remove();
+	expect(f.scan()).toBe(false);
+});
+test("unknown native completed requirements cannot authorize dispatch", () => {
+	const f = fixture("transport-order-completed-native.html");
+	for (const row of w.document.querySelectorAll(".order")) {
+		const progress = row.querySelector(".progress");
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+		row.querySelector(".button_green_128x44")?.remove();
+	}
+	w.document.querySelector(".order_type .meth").className = "unknown_resource";
+	f.scan();
+	expect(f.planner.planDispatch(2, 1)).toBeNull();
+});
 test("actual native rows parse decimals, model names and unique IDs without text guessing", () => {
 	const f = fixture();
 	f.scan();

@@ -789,6 +789,101 @@ test("transport donates once and keeps uncertain receipts across reinjection", (
 	expect(f.calls).toHaveLength(1);
 	expect(agent.heartbeat(false).transport.pending.orderId).toBe("14269885");
 });
+test("native completed warehouse dispatch outranks production and criminals on the final slot", () => {
+	const f = transportFixture();
+	f.root.remove();
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		readFileSync(
+			new URL(
+				"fixtures/transport-order-completed-native.html",
+				import.meta.url,
+			),
+			"utf8",
+		),
+	);
+	const root = w.document.querySelector("#dialog_transportcompany_order");
+	root.style.display = "none";
+	for (const row of root.querySelectorAll(".order")) {
+		const progress = row.querySelector(".progress");
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+		row.querySelector(".button_green_128x44")?.remove();
+	}
+	w.eval(transportSource);
+	const order = w.parseTransportOrder(root, () => now);
+	agent.stop();
+	const saved = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
+	saved.transport = { order };
+	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(saved));
+	const production = {
+		name: "production_manager",
+		kind: "production",
+		enabled: true,
+		reserve_slots: 0,
+		factories: [
+			{
+				id: "ready_factory",
+				empire: 2,
+				root: "#dialog_factory",
+				open_selector: "#open_factory",
+				selector: "#dialog_factory .produce",
+			},
+		],
+	};
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<button id="open_factory">Factory</button><div id="dialog_factory" class="dialog" style="display:none"><button class="produce">Produce</button></div><button id="go_crimes">Crime</button>',
+	);
+	const calls = [];
+	for (const id of ["open_factory", "go_crimes"])
+		w.document
+			.getElementById(id)
+			.addEventListener("click", () => calls.push(id));
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div id="dialog_transportcompany" class="dialog" style="display:none"><button class="button offers">Warehouse</button><button class="close">Close</button></div>',
+	);
+	const parent = w.document.querySelector("#dialog_transportcompany");
+	w.document
+		.querySelector("#transportcompany .tip")
+		.addEventListener("click", () => {
+			calls.push("transport");
+			parent.style.display = "block";
+		});
+	parent.querySelector(".offers").addEventListener("click", () => {
+		parent.style.display = "none";
+		root.style.display = "block";
+	});
+	root.querySelector(".produce").addEventListener("click", () => {
+		calls.push("deliver");
+		w.stats_timers = 8;
+	});
+	root.querySelector(".close").addEventListener("click", () => {
+		root.style.display = "none";
+	});
+	w.stats_timers = 7;
+	w.stats_health = 100;
+	agent = w.eval(`(${source})`)({
+		...fixtureConfig,
+		policies: [
+			production,
+			criminalPolicy,
+			{
+				name: "gym_trainer",
+				kind: "gym",
+				enabled: true,
+				empire: 1,
+				room: 4,
+				reserve_slots: 0,
+			},
+			...fixtureConfig.policies,
+		],
+	});
+	agent.heartbeat(false);
+	driveCriminal(6);
+	expect(calls).toEqual(["transport", "deliver"]);
+	expect(agent.snapshot().transport.pending?.kind).toBe("deliver");
+});
 test("transport progress requires observed donated amount and matching server receipt", () => {
 	const f = transportFixture();
 	const ack = transportAcks();
@@ -1432,6 +1527,22 @@ test("unknown production timer prevents cooking after discovery", () => {
 	driveCriminal(6);
 	expect(f.calls).toEqual(["parent"]);
 });
+test("restored Meth and XTC discovery ignores wrong maps even with cached native controls", () => {
+	for (const kind of ["meth", "xtc"]) {
+		if (agent) {
+			agent.stop();
+			w.happyDOM.abort();
+		}
+		const f = lazyFactoryFixture(kind);
+		const expected = kind === "meth" ? 1 : 2;
+		changeNativeEmpire(expected === 1 ? 2 : 1);
+		driveCriminal(8);
+		expect(f.calls).toEqual([]);
+		changeNativeEmpire(expected);
+		driveCriminal(12);
+		expect(f.calls).toEqual(["parent", "recipe", "cook"]);
+	}
+});
 test("production rechecks empire immediately before cooking from a discovered recipe", () => {
 	const f = lazyFactoryFixture("meth");
 	driveCriminal(2);
@@ -1463,6 +1574,45 @@ test("confirmed unrelated car theft does not invalidate a showroom scan without 
 		JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1")).records
 			.showroom_scan.next,
 	).toBe(saved.records.showroom_scan.next);
+});
+test("restored known event policy permits mastered crimes only while the event is active", () => {
+	const defaults = JSON.parse(
+		readFileSync(
+			new URL("../config/bidi-defaults.json", import.meta.url),
+			"utf8",
+		),
+	);
+	for (const remaining of [3600, 0]) {
+		if (agent) {
+			agent.stop();
+			w.happyDOM.abort();
+		}
+		const calls = criminalFixture();
+		w.event_status = 1;
+		w.document.body.insertAdjacentHTML(
+			"beforeend",
+			`<div id="dialog_events" style="display:none"><div class="event_header"><i class="event_icon event_succeed_crimes"></i></div><div class="event_end_time" data-timeleft="${remaining}"></div></div>`,
+		);
+		for (const progress of w.document.querySelectorAll(
+			".crime_box .progress",
+		)) {
+			progress.setAttribute("data-val", "100");
+			progress.setAttribute("data-max", "100");
+		}
+		agent = w.eval(`(${source})`)({
+			...fixtureConfig,
+			policies: [
+				{
+					...criminalPolicy,
+					event_objectives_enabled:
+						defaults.modules.criminal_activities.event_objectives_enabled,
+				},
+			],
+		});
+		agent.heartbeat(false);
+		driveCriminal();
+		expect(calls).toHaveLength(remaining ? 1 : 0);
+	}
 });
 test("live Succeed crimes repeats mastered crimes and learns acknowledged location timing", () => {
 	const calls = criminalFixture();
@@ -2189,10 +2339,10 @@ test("an unrelated modal prevents accepting a weed offer", () => {
 	expect(sold).toBe(0);
 });
 
-function weedSafetyFixture(buyer, reward = "cash") {
+function weedSafetyFixture(buyer, reward = "cash", id = "weed_offer") {
 	const root = scheduledFixture(
 		{
-			id: "weed_offer",
+			id,
 			task: "weed_offer",
 			root: "#dialog_weedfarm_offers",
 			selector: "#dialog_weedfarm_offers .yes",
@@ -2223,8 +2373,8 @@ function weedSafetyFixture(buyer, reward = "cash") {
 		},
 	};
 }
-function policeDenialFixture() {
-	const f = weedSafetyFixture("police");
+function policeDenialFixture(id = "weed_offer") {
+	const f = weedSafetyFixture("police", "cash", id);
 	f.root.insertAdjacentHTML(
 		"beforeend",
 		'<button class="button no">Deny</button>',
@@ -2312,6 +2462,27 @@ test("police denial timeout and reinjection preserve uncertain receipt without r
 		agent.snapshot().schedule.find((s) => s.id === "weed_offer_reject").pending,
 	).toBe(true);
 });
+test("custom Weed offer IDs block sales while their rejection receipt remains uncertain", () => {
+	const f = policeDenialFixture("custom_offer");
+	for (let i = 0; i < 3; i++) f.step();
+	expect(f.rejected()).toBe(1);
+	f.root.querySelector(".offer_character").className = "offer_character truck";
+	f.modal.className = "dialog notif_weed_offer_accept";
+	f.modal
+		.querySelector(".first")
+		.setAttribute("onclick", "cmd('weedfarm:acceptoffer');");
+	now += 1200000;
+	agent.stop();
+	delete w.__mafiaBot;
+	agent = w.eval(`(${source})`)(fixtureConfig);
+	agent.heartbeat(false);
+	for (let i = 0; i < 8; i++) f.step();
+	expect(f.sold()).toBe(1); // Only the earlier rejection clicked this shared confirmation.
+	expect(
+		agent.snapshot().schedule.find((s) => s.id === "custom_offer_reject")
+			.pending,
+	).toBe(true);
+});
 test("police denial blocks changed confirmation amounts", () => {
 	const f = policeDenialFixture();
 	f.step();
@@ -2376,6 +2547,56 @@ test("police cash denial remains possible with transport weed reservation enable
 	agent.heartbeat(false);
 	for (let i = 0; i < 4; i++) f.step();
 	expect(f.rejected()).toBe(1);
+});
+function restoreWeedReservation() {
+	agent.stop();
+	delete w.__mafiaBot;
+	const key = "mafia-bidi-state-v1";
+	const saved = JSON.parse(w.sessionStorage.getItem(key));
+	saved.transport = {
+		order: {
+			key: "weed",
+			rows: [
+				{
+					orderId: "1",
+					type: "weed",
+					required: 1461.6,
+					donated: 0,
+					remaining: 1461.6,
+				},
+			],
+			deadline_at: now + 864000000,
+		},
+	};
+	w.sessionStorage.setItem(key, JSON.stringify(saved));
+	agent = w.eval(`(${source})`)({
+		...fixtureConfig,
+		policies: [
+			{
+				name: "transport_manager",
+				kind: "transport",
+				enabled: true,
+				weed_reserve_enabled: true,
+			},
+			...fixtureConfig.policies,
+		],
+	});
+	agent.heartbeat(false);
+}
+test("restored transport reserve permits verified police diamonds and blocks ordinary buyers", () => {
+	const f = weedSafetyFixture("police", "diamonds");
+	restoreWeedReservation();
+	for (let i = 0; i < 4; i++) f.step();
+	expect(f.sold()).toBe(1);
+	expect(agent.snapshot().transport.weed_reserve).toBe(1461.6);
+	agent.stop();
+	w.happyDOM.abort();
+	const ordinary = weedSafetyFixture("truck");
+	w.weedfarm_capacity = 1461.6;
+	restoreWeedReservation();
+	for (let i = 0; i < 4; i++) ordinary.step();
+	expect(ordinary.sold()).toBe(0);
+	expect(ordinary.modal.style.display).toBe("none");
 });
 function cigarFixture(reward = "diamonds") {
 	const scheduled = JSON.parse(
@@ -2851,6 +3072,7 @@ function dailyGymFixture({
 	used = 0,
 	max = 2,
 	criminal = false,
+	empire = 1,
 } = {}) {
 	setup({
 		policies: [
@@ -2858,6 +3080,7 @@ function dailyGymFixture({
 			{
 				name: "gym_trainer",
 				kind: "gym",
+				empire,
 				enabled: true,
 				room: 4,
 				reserve_slots: 0,
@@ -2930,10 +3153,130 @@ function dailyGymFixture({
 		},
 	};
 }
+test("ready production retains priority before daily gym and criminals on the final slot", () => {
+	const f = dailyGymFixture({ lazy: true, criminal: true });
+	const factory = {
+		id: "ready_factory",
+		empire: 1,
+		root: "#dialog_factory",
+		open_selector: "#open_factory",
+		selector: "#dialog_factory .produce",
+	};
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<button id="open_factory">Factory</button><div id="dialog_factory" class="dialog" style="display:none"><button class="produce">Produce</button><i data-cdtimer="0"></i><button class="close">Close</button></div>',
+	);
+	const root = w.document.querySelector("#dialog_factory");
+	w.document.querySelector("#open_factory").addEventListener("click", () => {
+		root.style.display = "block";
+	});
+	root.querySelector(".produce").addEventListener("click", () => {
+		f.calls.push("production");
+		w.stats_timers = 8;
+		root.querySelector("i").setAttribute("data-cdtimer", "7200");
+	});
+	root.querySelector(".close").addEventListener("click", () => {
+		root.style.display = "none";
+	});
+	agent = w.eval(`(${source})`)({
+		...fixtureConfig,
+		policies: [
+			{
+				name: "production_manager",
+				kind: "production",
+				enabled: true,
+				reserve_slots: 0,
+				factories: [factory],
+			},
+			...fixtureConfig.policies,
+		],
+	});
+	agent.heartbeat(false);
+	for (let i = 0; i < 6; i++) f.step();
+	expect(f.calls).toEqual(["production"]);
+});
 test("daily gym loads absent DOM and takes the final free slot before criminal activities", () => {
 	const f = dailyGymFixture({ lazy: true, criminal: true });
 	for (let i = 0; i < 5; i++) f.step();
 	expect(f.calls.slice(0, 2)).toEqual(["open", "gym"]);
+});
+function changeNativeEmpire(empire) {
+	w.emp = empire;
+	w.document
+		.querySelector("#imperium #moneypress, #imperium #swissbank")
+		?.remove();
+	w.document
+		.querySelector("#imperium")
+		.insertAdjacentHTML(
+			"beforeend",
+			`<div id="${empire === 1 ? "moneypress" : "swissbank"}"></div>`,
+		);
+}
+test("cached hidden I gym sessions do not trigger discovery in II and resume after returning to I", () => {
+	const f = dailyGymFixture();
+	changeNativeEmpire(2);
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual([]);
+	changeNativeEmpire(1);
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual(["open", "gym"]);
+});
+test("visible cached I gym dialogs cannot recover or train while in II", () => {
+	const f = dailyGymFixture();
+	changeNativeEmpire(2);
+	w.document.querySelector("#dialog_gym_room").style.display = "block";
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual([]);
+	expect(agent.snapshot().active).toBeNull();
+	changeNativeEmpire(1);
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual(["gym"]);
+});
+test("gym final click rechecks empire after native controls are read", () => {
+	const f = dailyGymFixture();
+	f.step();
+	f.step();
+	const button = w.document.querySelector(".fitness");
+	const nativeGet = button.getAttribute.bind(button);
+	button.getAttribute = (name) => {
+		if (name === "onclick") changeNativeEmpire(2);
+		return nativeGet(name);
+	};
+	f.step();
+	expect(f.calls).toEqual(["open"]);
+	for (let i = 0; i < 3; i++) f.step();
+	expect(agent.snapshot().active).toBeNull();
+	expect(agent.snapshot().issues).toEqual({});
+});
+test("gym abandons lazy navigation after switching to II before reading sessions", () => {
+	const f = dailyGymFixture({ lazy: true });
+	f.step();
+	changeNativeEmpire(2);
+	for (let i = 0; i < 5; i++) f.step();
+	expect(f.calls).toEqual(["open"]);
+	expect(agent.snapshot().active).toBeNull();
+	expect(agent.snapshot().issues).toEqual({});
+});
+test("diagnostics expose gym affinity and daily sessions alongside transport scan and travel due times", () => {
+	dailyGymFixture({ used: 1, max: 10 });
+	const gym = agent.snapshot().gym;
+	expect(gym).toMatchObject({
+		empire: 1,
+		current_empire: 1,
+		used_sessions: 1,
+		maximum_sessions: 10,
+		timer_active: false,
+		ready: true,
+	});
+	changeNativeEmpire(2);
+	expect(agent.snapshot().gym.ready).toBe(false);
+	agent.stop();
+	w.happyDOM.abort();
+	transportFixture();
+	driveCriminal(6);
+	const transport = agent.snapshot().transport;
+	expect(transport.next_scan_due).toBeGreaterThan(now);
+	expect(transport.travel).toBeNull();
 });
 test("daily gym stops during native timer, repeats to cap and follows next-day reset", () => {
 	const f = dailyGymFixture();

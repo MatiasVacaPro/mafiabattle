@@ -1,7 +1,7 @@
 /* Factory injected in the default page realm. No focus, scroll or WebDriver input. */
 // biome-ignore lint/correctness/noUnusedVariables: Serialized and invoked by the BiDi driver.
 function createMafiaAgent(config) {
-	const VERSION = "1.2.1";
+	const VERSION = "1.2.2";
 	const configIdentity = JSON.stringify(config);
 	const target = new URL(config.target_url);
 	if (
@@ -1938,6 +1938,7 @@ function createMafiaAgent(config) {
 		);
 	}
 	function gymReady(policy, inspect = false) {
+		if (currentEmpire() !== (policy.empire || 1)) return false;
 		const sessions = query("#dialog_gym .stat_sessions .progress");
 		const used = number(sessions?.getAttribute("data-val")),
 			max = number(sessions?.getAttribute("data-max"));
@@ -2075,7 +2076,7 @@ function createMafiaAgent(config) {
 		return null;
 	}
 	function resourceReady(spec) {
-		if (spec.task === "weed_offer" && records.weed_offer_reject?.pending)
+		if (spec.task === "weed_offer" && records[`${spec.id}_reject`]?.pending)
 			return false;
 		if (
 			spec.task === "weed_offer" &&
@@ -3032,6 +3033,7 @@ function createMafiaAgent(config) {
 				id: "gym_train",
 				kind: "gym",
 				module: policy.name,
+				empire: policy.empire || 1,
 				root: `#dialog_gym_room .page_${policy.room}`,
 				selector: `#dialog_gym_room .page_${policy.room} .button.fitness`,
 				cooldown_seconds: 30,
@@ -3107,6 +3109,13 @@ function createMafiaAgent(config) {
 		return false;
 	}
 	function activeStep() {
+		if (
+			active.kind === "gym" &&
+			currentEmpire() !== (active.policy.empire || 1)
+		) {
+			active.phase = "close";
+			return closeOwned();
+		}
 		if (
 			active.kind === "transport" &&
 			displayed(query("#dialog_notification.no_resources")) &&
@@ -3468,12 +3477,14 @@ function createMafiaAgent(config) {
 			}
 			if (
 				policy.kind === "gym" &&
+				currentEmpire() === (policy.empire || 1) &&
 				["#dialog_gym", "#dialog_gym_room"].includes(id)
 			) {
 				const spec = {
 					id: "gym_train",
 					kind: "gym",
 					module: policy.name,
+					empire: policy.empire || 1,
 					root: `#dialog_gym_room .page_${policy.room}`,
 					selector: `#dialog_gym_room .page_${policy.room} .button.fitness`,
 					cooldown_seconds: 30,
@@ -3652,6 +3663,10 @@ function createMafiaAgent(config) {
 		}
 	}
 	function snapshot() {
+		const gymPolicy = policies.find(
+			(policy) => policy.enabled && policy.kind === "gym",
+		);
+		const sessions = query("#dialog_gym .stat_sessions .progress");
 		observeEmpires();
 		const base = baseState();
 		const actionSpecs = policies.flatMap((policy) => [
@@ -3760,7 +3775,23 @@ function createMafiaAgent(config) {
 			},
 			active_timers: activeTimers(),
 			events: eventObjectives?.snapshot() || null,
-			transport: transportPlanner?.snapshot() || null,
+			transport: transportPlanner
+				? {
+						...transportPlanner.snapshot(),
+						next_scan_due: records.transport_scan?.next || 0,
+						travel: records.transport_travel || null,
+					}
+				: null,
+			gym: gymPolicy
+				? {
+						empire: gymPolicy.empire || 1,
+						current_empire: currentEmpire(),
+						used_sessions: number(sessions?.getAttribute("data-val")),
+						maximum_sessions: number(sessions?.getAttribute("data-max")),
+						timer_active: gymTimerActive(),
+						ready: gymReady(gymPolicy),
+					}
+				: null,
 			trades: {
 				weed_reserve_enabled: transportPolicy?.weed_reserve_enabled !== false,
 				cigar:

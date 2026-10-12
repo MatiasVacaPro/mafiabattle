@@ -145,16 +145,18 @@ a partir de ambas páginas de la wiki; rechaza tablas/conteos inesperados.
 |---|---|
 | `anti_idle` | Recupera avisos identificados y envía `cmd('ping:pong')` cada 60 s sin modales. |
 | `barrio_collector` | Imprenta, tatuajes, nightclub, redlight, fábrica de gemas y munición: controles DOM y capacidad; mínimo 5 min entre recolecciones. |
-| `gym_trainer` | Sesiones diarias y plazas de timer; navega a ejercicio 4. Admite selector de energía opcional y umbral. |
+| `gym_trainer` | Solo I: inspecciona sesiones diarias bajo demanda, ejercicio 4 de cinco minutos hasta el máximo nativo; espera su timer y admite la última plaza global libre. |
 | `casino_player` | Ruleta y Mayor/Menor cada 30 min, disponibilidad real, números estables; recupera por GET tras 60 s sin avance. |
-| `production_manager` | Weed19min, stock2h y gemas3h enI; XTC enII solo con espacio para tanda completa, cash y plaza. Municiones nuevas desactivadas. |
+| `production_manager` | Weed19min, stock2h, gemas3h y Meth enI; XTC enII. Meth/XTC abren receta nativa bajo demanda y siguen vencimientos reales, capacidad de tanda completa, cash y plaza. Municiones nuevas desactivadas. |
+| `transport_manager` | Solo II: lee almacén, aporta tandas disponibles con recibo de servidor y cantidad completa, encadena filas confirmadas y despacha al completar con una plaza libre. Reserva Weed pendiente. |
 | `helicopter_collector` | Botón nativo del helicóptero visible, una captura por vuelo; confirma respuesta del servidor y actualización del premio. |
 | `health_manager` | Con vida ≤100 compra packs de cash hasta ≥400; reserva100000 y presupuesto400000 por ciclo. |
 | `empire_manager` | I como base7200s; visitaII, recoge dinero/materias y vuelve al habilitarse aeropuerto. Conserva estancias y viajes pendientes. |
 | `criminal_activities` | Llena plazas libres alternando carros/crímenes según salud, dominio y disponibilidad real. |
 | `user_guard` | Pausa síncrona de 15 s y autorización común para todos los módulos. |
 
-Carros y crímenes tienen prioridad sobre gimnasio al competir por la última plaza.
+Un transporte completo tiene prioridad para la última plaza. Producción conserva
+su prioridad; el gimnasio listo recibe una oportunidad antes de carros y crímenes.
 Mandan timers reales `data-cdtimer` y controles disponibles; un timer inválido no
 equivale a cero. Dinero y munición se acumulan continuamente: sus botones permiten
 recolectar antes de terminar todo el ciclo de producción.
@@ -163,6 +165,21 @@ recolectar antes de terminar todo el ciclo de producción.
 `#timer_detail_countdown`), `timer_actions.with_slot/without_slot/unknown` y
 `schedule` (intervalos, vencimientos y confirmaciones pendientes). Los contadores
 `stats_timers/stats_timers_max` son los mismos que actualiza `update_user_timers`.
+`gym` muestra imperio requerido/actual, sesiones usadas/máximo, timer y disponibilidad;
+`transport.next_scan_due` y `transport.travel` muestran la próxima inspección y viaje.
+Meth/XTC incluyen la fecha absoluta de próxima inspección en `schedule.next_due`.
+
+Mapa de acciones: Weed, Meth, stock, cigarros, gimnasio y cobros I requieren I;
+transporte, XTC, Scrap Yard, Mafia Bar, alcohol y almacén requieren II. Cuenta,
+salud, helicóptero y actividades del menú usan controles globales observados.
+Diálogos ocultos o precargados de otro mapa no habilitan ejercicio ni producción.
+
+Objetivos de eventos conocidos y reserva de Weed para transporte están activos
+en ambas configuraciones. Un evento vencido no habilita repetir actividades dominadas.
+La policía con cash se rechaza usando confirmación nativa; diamantes positivos
+verificados conservan su excepción, aun con reserva. Compradores ordinarios esperan
+la reserva; ofertas desconocidas no autorizan venta ni rechazo. Cigarros mantienen
+la política sin cash. Los recibos inciertos sobreviven reinyecciones sin repetir comando.
 Se inspecciona `check_timers(N,...)` en el handler real antes de cada clic: una
 acción que pase a consumir plazas queda bloqueada aunque la configuración diga
 lo contrario. Un requisito no interpretable también bloquea la acción.
@@ -317,7 +334,10 @@ Bar/almacén actualmente mejorándose esperan sus controles reales. El laborator
 XTC inicia una tanda solamente si cabe toda, cuesta≤50000 y hay una plaza libre;
 confirma el inicio mediante respuesta y temporizador de producción. Con164.2/190KG
 y tanda50KG se abstiene. El juego acredita la producción mediante sus temporizadores
-nativos; no inventa un botón de cosecha. No inicia reciclajes, entregas ni upgrades.
+nativos; no inventa un botón de cosecha. No inicia reciclajes ni upgrades.
+El transporte reconoce filas completas por ID nativo estricto y progreso numérico,
+aunque ya no tengan Donate. Filas incompletas requieren un Donate con ID coincidente;
+controles contradictorios o recursos desconocidos no autorizan despacho.
 
 Los cobrosII requieren respuesta del comando y cambio de recurso; cash exige también
 el aumento correspondiente del saldo. Una reducción local optimista no basta. Tras60s
