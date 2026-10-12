@@ -267,9 +267,31 @@ function createMafiaAgent(config) {
 			max = number(globalThis.stats_timers_max);
 		return used !== null && max !== null && max - used > reserve;
 	}
+	function transportTravelBlocked() {
+		const parent = query("#dialog_transportcompany");
+		return all(".timedetail", parent).some((region) => {
+			const timers = all("[data-cdtimer]", region);
+			return (
+				(!timers.length && displayed(region, parent)) ||
+				timers.some((el) => {
+					const seconds = number(el.getAttribute("data-cdtimer"));
+					return seconds === null || seconds > 0;
+				})
+			);
+		});
+	}
+	function planTransportDispatch(
+		empire = currentEmpire(),
+		freeSlots = slotsAvailable() ? 1 : 0,
+	) {
+		return transportTravelBlocked()
+			? null
+			: transportPlanner?.planDispatch(empire, freeSlots);
+	}
 	function reservedSlots(requested) {
+		const transport = planTransportDispatch(currentEmpire(), 1) ? 1 : 0;
 		if (!requested || (!eventObjectives?.isEventActive() && !transportPlanner))
-			return requested || 0;
+			return Math.max(requested || 0, transport);
 		const waiting = policies
 			.filter((p) => p.enabled && p.kind === "production")
 			.some((p) =>
@@ -291,7 +313,7 @@ function createMafiaAgent(config) {
 					);
 				}),
 			);
-		return waiting ? requested : 0;
+		return Math.max(waiting ? requested : 0, transport);
 	}
 	function requiredSlots(spec, el) {
 		const handler = el?.getAttribute("onclick") || "";
@@ -408,9 +430,9 @@ function createMafiaAgent(config) {
 			return false;
 		if (!spec.quantity_selector) return true;
 		const el = query(spec.selector);
-		const quantity = number(
-			query(spec.quantity_selector)?.getAttribute("data-val"),
-		);
+		const quantityNode = query(spec.quantity_selector);
+		const quantity = number(quantityNode?.getAttribute("data-val"));
+		const outputMax = number(quantityNode?.getAttribute("data-max"));
 		const max = number(query(spec.capacity_selector)?.getAttribute("data-max"));
 		const stored = capacityOf(spec),
 			cash = number(globalThis.stats_cash);
@@ -432,7 +454,8 @@ function createMafiaAgent(config) {
 			quantity > 0 &&
 			max !== null &&
 			stored !== null &&
-			max - stored >= quantity &&
+			outputMax !== null &&
+			max - stored >= Math.max(quantity, outputMax) &&
 			price !== null &&
 			(free || price > 0) &&
 			price <= spec.maximum_cash_cost &&
@@ -443,6 +466,42 @@ function createMafiaAgent(config) {
 				handler.includes(`'type':'${spec.expected_type}'`)) &&
 			timersReady(query(spec.production_root))
 		);
+	}
+	// Keep absolute due dates: rereading an unchanged hidden countdown cannot
+	// postpone completion. Cooking still requires a fresh native parent visit.
+	function observeProductionTimer(spec, fresh = false) {
+		const root = query(spec.production_root);
+		if (!root) return null;
+		const timers = all("[data-cdtimer]", root);
+		const values = timers.map((el) => number(el.getAttribute("data-cdtimer")));
+		if (values.some((value) => value === null)) return null;
+		const seconds = Math.max(0, ...values);
+		const key = `scan_${spec.id}`;
+		const previous = records[key];
+		if (fresh || previous?.sample_seconds !== seconds) {
+			const completion = seconds > 0 ? now() + seconds * 1000 : 0;
+			records[key] = {
+				next:
+					completion ||
+					(previous?.sample_seconds === seconds ? previous.next : 0),
+				completion_at: completion,
+				sample_seconds: seconds,
+				sample_at: now(),
+				failures: seconds > 0 ? 0 : previous?.failures || 0,
+			};
+			persist();
+		}
+		return seconds;
+	}
+	function productionBackoff(spec) {
+		const key = `scan_${spec.id}`;
+		const failures = (records[key]?.failures || 0) + 1;
+		records[key] = {
+			...records[key],
+			failures,
+			next: now() + [5000, 15000, 30000][Math.min(failures - 1, 2)],
+		};
+		persist();
 	}
 	function fingerprint(spec, el) {
 		const root = spec.root ? query(spec.root) : el?.parentElement;
@@ -690,9 +749,20 @@ function createMafiaAgent(config) {
 						globalThis.performance?.timeOrigin
 				)
 					eventObjectives?.recordCooldownSample(spec, item.at, now());
-				if (spec.kind === "criminal" && spec.family === "cars")
+				if (
+					spec.kind === "criminal" &&
+					spec.family === "cars" &&
+					transportPlanner?.getCarTheftTarget()
+				)
 					records.showroom_scan = { next: 0 };
 				item.pending = false;
+				if (spec.kind === "production") observeProductionTimer(spec, true);
+				if (spec.kind === "transport_donate") {
+					transportPlanner?.observeOrder(
+						parseTransportOrder(query(spec.root), now),
+					);
+					transportPlanner?.confirmDonation(spec.order_id, spec.amount);
+				}
 				if (spec.kind === "transport_deliver")
 					transportPlanner?.confirmDelivery();
 				record(spec.module, "dom_updated", {
@@ -757,12 +827,18 @@ function createMafiaAgent(config) {
 		if (spec?.kind === "criminal" && !criminalReady(spec)) return false;
 		if (spec?.kind === "transport_donate" && !transportDonationReady(spec))
 			return false;
-		if (
-			spec?.kind === "transport_deliver" &&
-			!transportPlanner?.planDispatch(currentEmpire(), slotsAvailable() ? 1 : 0)
-		)
+		if (spec?.kind === "transport_deliver" && !planTransportDispatch())
 			return false;
 		if (spec?.kind === "production" && !factoryReady(spec)) return false;
+		if (
+			spec?.kind === "production" &&
+			!actionSlotsReady(
+				spec,
+				el,
+				planTransportDispatch(currentEmpire(), 1) ? 1 : 0,
+			)
+		)
+			return false;
 		if (spec?.kind === "collector" && !collectorReady(spec, el)) return false;
 		if (spec?.kind === "weed_offer" && !weedOfferApproved(spec, true))
 			return false;
@@ -803,6 +879,16 @@ function createMafiaAgent(config) {
 			return false;
 		}
 		if (spec) {
+			if (
+				spec.kind === "transport_donate" &&
+				!transportPlanner?.markActionPending(spec.order_id, spec.amount)
+			)
+				return false;
+			if (
+				spec.kind === "transport_deliver" &&
+				!transportPlanner?.markDeliveryPending()
+			)
+				return false;
 			if (
 				spec.kind === "empire_flight" &&
 				!empirePlanner?.markFlight(spec.from, spec.to)
@@ -1136,6 +1222,7 @@ function createMafiaAgent(config) {
 							"production",
 							"gym",
 							"empire",
+							"transport",
 						].includes(p.kind),
 				)
 			) ||
@@ -2573,25 +2660,50 @@ function createMafiaAgent(config) {
 			return false;
 		return click(button, policy.name, "close_criminal_result");
 	}
-	function observeTransportStocks() {
+	function observeTransportStocks(freshRoot = null) {
+		if (!transportPlanner) return;
+		const orderKey = transportPlanner.snapshot().order?.key;
 		for (const resource of ["weed", "meth", "xtc"]) {
 			const building = resource === "weed" ? "weedfarm" : `${resource}lab`;
-			const dom = number(
-				query(`#dialog_${building} .stat_${resource} .progress`)?.getAttribute(
-					"data-val",
-				),
-			);
+			const parent = query(`#dialog_${building}`);
+			const dom = displayed(parent)
+				? number(
+						query(`.stat_${resource} .progress`, parent)?.getAttribute(
+							"data-val",
+						),
+					)
+				: null;
 			const live = number(globalThis[`${building}_capacity`]);
-			if (live !== null || dom !== null)
-				transportPlanner?.observeStock(resource, live ?? dom);
+			const fresh = freshRoot === `#dialog_${building}` && displayed(parent);
+			const amount = fresh ? (dom ?? live) : (live ?? dom);
+			const sample = records[`transport_stock_${resource}`];
+			if (
+				amount !== null &&
+				(fresh ||
+					!sample ||
+					sample.amount !== amount ||
+					sample.orderKey !== orderKey)
+			) {
+				transportPlanner.observeStock(resource, amount);
+				records[`transport_stock_${resource}`] = {
+					amount,
+					orderKey,
+					at: now(),
+				};
+				if (transportPlanner.needs(resource) && amount > 0)
+					records.transport_scan = { next: 0 };
+				persist();
+			}
 		}
 	}
 	function transportDonationReady(spec) {
-		if (currentEmpire() !== 2 || !transportPlanner) return false;
+		if (currentEmpire() !== 2 || !transportPlanner || transportTravelBlocked())
+			return false;
 		const order = parseTransportOrder(
 			query("#dialog_transportcompany_order"),
 			now,
 		);
+		if (!order) return false;
 		transportPlanner.observeOrder(order);
 		const action = transportPlanner.planDonation(currentEmpire());
 		return (
@@ -2630,8 +2742,15 @@ function createMafiaAgent(config) {
 			}
 			for (const [name, count] of Object.entries(counts))
 				transportPlanner.observeStock(`car:${name}`, count);
+			records.showroom_scan = { next: now() + 1800000 };
 			persist();
 			active.phase = "close";
+			return false;
+		}
+		if (transportTravelBlocked()) {
+			records.transport_scan = { next: now() + 30000 };
+			active.phase = "close";
+			persist();
 			return false;
 		}
 		if (!displayed(query("#dialog_transportcompany_order"))) {
@@ -2647,19 +2766,34 @@ function createMafiaAgent(config) {
 		}
 		if (active.phase === "wait") {
 			if (!records[active.spec.id]?.pending) {
-				transportPlanner.observeOrder(
-					parseTransportOrder(query("#dialog_transportcompany_order"), now),
-				);
-				records.transport_scan = { next: now() + 5000 };
-				persist();
+				active.phase =
+					active.spec.kind === "transport_deliver" ? "close" : "open";
+				if (active.phase === "close") return false;
+			} else {
+				return false;
+			}
+		}
+		const order = parseTransportOrder(
+			query("#dialog_transportcompany_order"),
+			now,
+		);
+		if (!order) {
+			if (now() - active.openedAt > config.ack_timeout_ms) {
+				const failures = (records.transport_scan?.failures || 0) + 1;
+				records.transport_scan = {
+					failures,
+					next: now() + [5000, 15000, 30000][Math.min(failures - 1, 2)],
+				};
 				active.phase = "close";
+				persist();
 			}
 			return false;
 		}
-		transportPlanner.observeOrder(
-			parseTransportOrder(query("#dialog_transportcompany_order"), now),
-		);
+		transportPlanner.observeOrder(order);
 		observeTransportStocks();
+		records.transport_scan = {
+			next: now() + (policy.scan_seconds || 300) * 1000,
+		};
 		persist();
 		if (
 			Object.values(records).some(
@@ -2669,7 +2803,7 @@ function createMafiaAgent(config) {
 			active.phase = "close";
 			return false;
 		}
-		const dispatch = transportPlanner.planDispatch(2, slotsAvailable() ? 1 : 0);
+		const dispatch = planTransportDispatch();
 		const donation = transportPlanner.planDonation(2);
 		const action = dispatch || donation;
 		if (!action) {
@@ -2691,7 +2825,7 @@ function createMafiaAgent(config) {
 			allow_readback: true,
 			expected_command: dispatch ? "transport:deliver" : "transport:donate",
 			requires_timer_slot: !!dispatch,
-			cooldown_seconds: 5,
+			cooldown_seconds: 0,
 		};
 		if (
 			click(
@@ -2701,8 +2835,6 @@ function createMafiaAgent(config) {
 				spec,
 			)
 		) {
-			if (dispatch) transportPlanner.markDeliveryPending();
-			else transportPlanner.markActionPending(action.orderId);
 			active.spec = spec;
 			active.phase = "wait";
 			persist();
@@ -2728,18 +2860,14 @@ function createMafiaAgent(config) {
 			)
 				return false;
 			begin(policy, "transport", { id: "transport_scan" });
-			records[key] = {
-				next: now() + (empire === 1 ? 1800 : policy.scan_seconds) * 1000,
-			};
-			persist();
 			return true;
 		}
 		if (policy.kind === "empire" && empirePlanner) {
 			observeEmpires();
+			if (transportPlanner?.snapshot().pending) return false;
 			if (
 				currentEmpire() === 2 &&
-				(transportPlanner?.planDonation(2) ||
-					transportPlanner?.planDispatch(2, slotsAvailable() ? 1 : 0))
+				(transportPlanner?.planDonation(2) || planTransportDispatch(2, 1))
 			)
 				return false;
 			const unsettled = Object.values(records).find(
@@ -2865,25 +2993,33 @@ function createMafiaAgent(config) {
 		}
 		if (
 			policy.kind === "production" &&
-			slotsAvailable(policy.reserve_slots || 0)
+			slotsAvailable(
+				Math.max(
+					policy.reserve_slots || 0,
+					planTransportDispatch(currentEmpire(), 1) ? 1 : 0,
+				),
+			)
 		) {
 			for (const factory of policy.factories) {
 				const spec = { ...factory, kind: "production", module: policy.name };
+				if (spec.empire && currentEmpire() !== spec.empire) continue;
+				if (
+					spec.objective_resource &&
+					!transportPlanner?.needs(spec.objective_resource)
+				)
+					continue;
+				if (records[spec.id]?.pending) continue;
+				if (spec.route?.length) {
+					observeProductionTimer(spec);
+					if (now() < (records[`scan_${spec.id}`]?.next || 0)) continue;
+					if (enabled(query(spec.route[0].selector))) {
+						begin(policy, "production", spec);
+						return true;
+					}
+					continue;
+				}
 				const root = query(spec.root),
 					el = query(spec.selector);
-				if (
-					!el &&
-					spec.route?.length &&
-					(!spec.empire || currentEmpire() === spec.empire) &&
-					(!spec.objective_resource ||
-						transportPlanner?.needs(spec.objective_resource)) &&
-					timersReady(query(spec.production_root)) &&
-					enabled(query(spec.route[0].selector)) &&
-					now() >= (records[`attempt_${spec.id}`]?.next || 0)
-				) {
-					begin(policy, "production", spec);
-					return true;
-				}
 				if (
 					root &&
 					factoryReady(spec) &&
@@ -2952,6 +3088,9 @@ function createMafiaAgent(config) {
 					issues[active.policy.name] =
 						`Navigation did not complete: ${active.awaiting.selector}`;
 					active.awaiting = null;
+					if (active.kind === "production") productionBackoff(active.spec);
+					if (active.kind === "transport")
+						records.transport_scan = { next: now() + 5000 };
 					active.phase = "close";
 				} else return false;
 			}
@@ -3030,12 +3169,40 @@ function createMafiaAgent(config) {
 			return false;
 		}
 		if (kind === "production") {
+			if (spec.route?.length && !active.parentObserved) {
+				if (!displayed(query(spec.production_root)))
+					return openStep(spec.route[0].selector, spec.production_root);
+				const seconds = observeProductionTimer(spec, true);
+				if (
+					seconds === null ||
+					!query(spec.capacity_selector) ||
+					!query(spec.quantity_selector)
+				) {
+					if (now() - active.openedAt > config.ack_timeout_ms) {
+						productionBackoff(spec);
+						active.phase = "close";
+					}
+					return false;
+				}
+				if (seconds > 0 || !timersReady(query(spec.production_root))) {
+					if (!seconds) productionBackoff(spec);
+					active.phase = "close";
+					return false;
+				}
+				active.parentObserved = true;
+				observeTransportStocks(spec.production_root);
+			}
 			if (!displayed(query(spec.root)) && spec.route?.length) {
-				for (const step of spec.route)
-					if (!displayed(query(step.root)))
-						return openStep(step.selector, step.root);
+				const step = spec.route.find((step) => step.root === spec.root);
+				if (!enabled(query(step.selector))) {
+					productionBackoff(spec);
+					active.phase = "close";
+					return false;
+				}
+				return openStep(step.selector, step.root);
 			}
 			if (!factoryReady(spec)) {
+				if (spec.route?.length) productionBackoff(spec);
 				active.phase = "close";
 				return false;
 			}
@@ -3043,7 +3210,12 @@ function createMafiaAgent(config) {
 				return openStep(spec.open_selector, spec.root);
 			const el = query(spec.selector);
 			if (
-				!slotsAvailable(policy.reserve_slots || 0) ||
+				!slotsAvailable(
+					Math.max(
+						policy.reserve_slots || 0,
+						planTransportDispatch(currentEmpire(), 1) ? 1 : 0,
+					),
+				) ||
 				!timersReady(query(spec.root))
 			) {
 				active.phase = "close";
@@ -3281,7 +3453,9 @@ function createMafiaAgent(config) {
 						kind: resource.task,
 						module: policy.name,
 					});
-				const factory = policy.factories.find((f) => f.root === id);
+				const factory = policy.factories.find(
+					(f) => f.root === id || f.route?.some((step) => step.root === id),
+				);
 				if (factory)
 					begin(policy, "production", {
 						...factory,
@@ -3335,6 +3509,20 @@ function createMafiaAgent(config) {
 			}
 			if (state !== "RUNNING" || now() < nextActionAt) return;
 			observeCommandSuccess();
+			observeTransportStocks();
+			if (transportPlanner) {
+				const free = slotsAvailable();
+				if (
+					free &&
+					records.transport_slots?.free === false &&
+					planTransportDispatch(currentEmpire(), 1)
+				)
+					records.transport_scan = { next: 0 };
+				if (records.transport_slots?.free !== free) {
+					records.transport_slots = { free };
+					persist();
+				}
+			}
 			if (recoverHiloStall()) return;
 			if (globalRecovery()) return;
 			if (displayed(query("#cmd_busy"))) return;
@@ -3368,6 +3556,15 @@ function createMafiaAgent(config) {
 				return;
 			}
 			const scheduledPolicies = policies.filter((p) => p.enabled);
+			if (planTransportDispatch(currentEmpire(), 1)) {
+				const transportIndex = scheduledPolicies.findIndex(
+					(p) => p.kind === "transport",
+				);
+				if (transportIndex > 0)
+					scheduledPolicies.unshift(
+						...scheduledPolicies.splice(transportIndex, 1),
+					);
+			}
 			const gymIndex = scheduledPolicies.findIndex((p) => p.kind === "gym");
 			const criminalIndex = scheduledPolicies.findIndex(
 				(p) => p.kind === "criminal",

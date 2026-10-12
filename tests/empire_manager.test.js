@@ -6,6 +6,10 @@ const agentSource = readFileSync(
 	new URL("../scripts/supervisor.js", import.meta.url),
 	"utf8",
 );
+const transportSource = readFileSync(
+	new URL("../scripts/transport_planner.js", import.meta.url),
+	"utf8",
+);
 const helperPath = new URL("../scripts/empire_manager.js", import.meta.url);
 const helperSource = existsSync(helperPath)
 	? readFileSync(helperPath, "utf8")
@@ -144,9 +148,9 @@ function fixture(map = 1, extra = {}) {
 		...extra.config,
 	};
 	const install = () => {
-		agent = w.eval(`(()=>{${helperSource};return (${agentSource});})()`)(
-			config,
-		);
+		agent = w.eval(
+			`(()=>{${helperSource};${transportSource};return (${agentSource});})()`,
+		)(config);
 		agent.heartbeat(false);
 	};
 	install();
@@ -611,6 +615,52 @@ test("a missing persisted entry timestamp never counts time since Unix epoch", (
 	expect(planner.snapshot().secondary_ms).toBe(0);
 	expect(planner.snapshot().last_secondary_duration_ms).toBe(0);
 });
+test("ready transport waits in Empire II for its slot and an unresolved planner receipt also prevents flight", () => {
+	const f = fixture(2, {
+		config: {
+			policies: [
+				{ name: "transport_manager", kind: "transport", enabled: true },
+				empirePolicy,
+			],
+		},
+	});
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		readFileSync(
+			new URL("fixtures/transport-order.html", import.meta.url),
+			"utf8",
+		),
+	);
+	const root = w.document.querySelector("#dialog_transportcompany_order");
+	root.style.display = "none";
+	for (const progress of root.querySelectorAll(".order .progress"))
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+	w.eval(transportSource);
+	const order = w.parseTransportOrder(root, () => clock);
+	agent.stop();
+	const saved = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
+	saved.transport = { order };
+	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(saved));
+	f.config.revision = 2;
+	f.install();
+	for (let i = 0; i < 6; i++) f.step();
+	expect(f.calls).toEqual([]);
+	agent.stop();
+	const pending = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
+	pending.transport.pending = {
+		kind: "donate",
+		orderId: "14269885",
+		resource: "weed",
+		before: 0,
+		amount: 10,
+		at: clock,
+	};
+	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(pending));
+	f.config.revision = 3;
+	f.install();
+	for (let i = 0; i < 6; i++) f.step();
+	expect(f.calls).toEqual([]);
+});
 test("XTC production waits for a full batch of storage space, a free slot and its native timer receipt", () => {
 	const factory = {
 		id: "xtc_produce",
@@ -653,7 +703,7 @@ test("XTC production waits for a full batch of storage space, a free slot and it
 		);
 	w.document.body.insertAdjacentHTML(
 		"beforeend",
-		'<div id="dialog_xtclab" style="display:none"><i data-cdtimer="0"></i><div class="stat_xtc"><div class="progress" data-max="190"></div></div><div class="stat_cooking"><div class="progress" data-val="50"></div></div></div><div class="dialog" id="dialog_xtclab_lab" style="display:none"><button class="button cash" onclick="if(!check_timers(1,this))return;if(!check_cash(50000,this))return;cmd(\'object:produce\',{type:\'xtclab\'})">Produce</button><button class="close">Close</button></div>',
+		'<div id="dialog_xtclab" style="display:none"><i data-cdtimer="0"></i><div class="stat_xtc"><div class="progress" data-max="190"></div></div><div class="stat_cooking"><div class="progress" data-val="50" data-max="50"></div></div></div><div class="dialog" id="dialog_xtclab_lab" style="display:none"><button class="button cash" onclick="if(!check_timers(1,this))return;if(!check_cash(50000,this))return;cmd(\'object:produce\',{type:\'xtclab\'})">Produce</button><button class="close">Close</button></div>',
 	);
 	w.document
 		.querySelector("#xtclab .exclamation")

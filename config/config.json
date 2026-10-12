@@ -321,7 +321,6 @@
           {
             "id": "meth_produce",
             "empire": 1,
-            "objective_resource": "meth",
             "root": "#dialog_methlab_lab",
             "open_selector": "#imperium #methlab .tip",
             "selector": "#dialog_methlab_lab .button.produce",
@@ -334,7 +333,7 @@
             "maximum_cash_cost": 0,
             "reserve_cash": 100000,
             "requires_timer_slot": true,
-            "cooldown_seconds": 300,
+            "cooldown_seconds": 0,
             "require_server_ack": true,
             "require_production_timer": true,
             "expected_command": "object:produce",
@@ -353,7 +352,7 @@
             "id": "xtc_produce",
             "empire": 2,
             "root": "#dialog_xtclab_lab",
-            "open_selector": "#imperium #xtclab .collect.exclamation",
+            "open_selector": "#imperium #xtclab .tip",
             "selector": "#dialog_xtclab_lab .button.cash",
             "production_root": "#dialog_xtclab",
             "capacity_global": "xtclab_capacity",
@@ -362,10 +361,21 @@
             "maximum_cash_cost": 50000,
             "reserve_cash": 100000,
             "requires_timer_slot": true,
-            "cooldown_seconds": 300,
+            "cooldown_seconds": 0,
             "require_server_ack": true,
             "require_production_timer": true,
-            "expected_command": "object:produce"
+            "expected_command": "object:produce",
+            "expected_type": "xtclab",
+            "route": [
+              {
+                "selector": "#imperium #xtclab .tip",
+                "root": "#dialog_xtclab"
+              },
+              {
+                "selector": "#dialog_xtclab .button.lab",
+                "root": "#dialog_xtclab_lab"
+              }
+            ]
           }
         ],
         "scheduled": [

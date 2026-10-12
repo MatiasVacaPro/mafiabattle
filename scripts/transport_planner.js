@@ -98,14 +98,40 @@ function createMafiaTransportPlanner(policy, saved = {}, clock = Date.now) {
 		else state.stocks = {};
 		state.order = order;
 		state.last_scan_at = clock();
-		if (state.pending?.kind === "donate") {
-			const row = order.rows.find((r) => r.orderId === state.pending.orderId);
-			if (row && row.donated > state.pending.before) {
+		reconcileDonation();
+		return true;
+	}
+	function reconcileDonation() {
+		if (
+			state.pending?.kind === "donate" &&
+			state.pending.acknowledged &&
+			Number.isFinite(state.pending.amount)
+		) {
+			const order = state.order;
+			const row = order?.rows.find((r) => r.orderId === state.pending.orderId);
+			if (
+				row &&
+				row.donated >= state.pending.before + state.pending.amount - 0.001
+			) {
 				delete state.stocks[state.pending.resource];
 				state.pending = null;
+				return true;
 			}
 		}
-		return true;
+		return false;
+	}
+	function confirmDonation(orderId, amount) {
+		if (
+			state.pending?.kind !== "donate" ||
+			state.pending.orderId !== orderId ||
+			!Number.isFinite(amount) ||
+			amount <= 0 ||
+			(Number.isFinite(state.pending.amount) && state.pending.amount !== amount)
+		)
+			return false;
+		state.pending.amount = amount;
+		state.pending.acknowledged = true;
+		return reconcileDonation();
 	}
 	function observeStock(resource, amount) {
 		if (!Number.isFinite(amount) || amount < 0) return;
@@ -188,7 +214,7 @@ function createMafiaTransportPlanner(policy, saved = {}, clock = Date.now) {
 			selector: "#dialog_transportcompany_order .button.produce",
 		};
 	}
-	function markActionPending(orderId) {
+	function markActionPending(orderId, amount) {
 		if (state.pending) return false;
 		const row = state.order?.rows.find((r) => r.orderId === orderId);
 		if (!row) return false;
@@ -197,6 +223,7 @@ function createMafiaTransportPlanner(policy, saved = {}, clock = Date.now) {
 			orderId,
 			resource: row.type === "car" ? `car:${normalize(row.name)}` : row.type,
 			before: row.donated,
+			amount: Number.isFinite(amount) && amount > 0 ? amount : null,
 			at: clock(),
 		};
 		return true;
@@ -225,6 +252,7 @@ function createMafiaTransportPlanner(policy, saved = {}, clock = Date.now) {
 		planDonation,
 		planDispatch,
 		markActionPending,
+		confirmDonation,
 		markDeliveryPending,
 		confirmDelivery,
 		needs: (resource) =>

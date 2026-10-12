@@ -791,17 +791,13 @@ test("transport donates once and keeps uncertain receipts across reinjection", (
 });
 test("transport progress requires observed donated amount and matching server receipt", () => {
 	const f = transportFixture();
+	const ack = transportAcks();
 	driveCriminal(6);
-	const stored = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
-	const id = "transport_donate_14269885";
-	stored.records[id].commandConfirmed = true;
-	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(stored));
+	ack("transport:donate");
 	f.root
 		.querySelector("#transportorder_14269885 .progress")
 		.setAttribute("data-val", "959.74");
 	w.weedfarm_capacity = 0;
-	agent = w.eval(`(${source})`)({ ...fixtureConfig, config_revision: 2 });
-	agent.heartbeat(false);
 	driveCriminal(10);
 	const snap = agent.heartbeat(false);
 	expect(snap.transport.pending).toBeNull();
@@ -841,6 +837,217 @@ test("stopping twice does not overwrite state saved after the supervisor stopped
 		JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"))
 			.external_checkpoint,
 	).toBe("preserved");
+});
+function transportAcks() {
+	let callback;
+	w.jQuery = () => ({
+		on: (_name, cb) => {
+			callback = cb;
+		},
+		off: () => {},
+	});
+	return (command) =>
+		callback?.(
+			{},
+			{ status: 200 },
+			{ url: `/cmd/?c=${encodeURIComponent(command)}` },
+		);
+}
+test("transport waits for a delayed warehouse shell without discarding its stored objective", () => {
+	const f = transportFixture();
+	w.eval(transportSource);
+	const order = w.parseTransportOrder(f.root, () => now);
+	agent.stop();
+	const saved = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
+	saved.transport = { order };
+	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(saved));
+	const warehouse = f.root.querySelector(".warehouse");
+	warehouse.remove();
+	agent = w.eval(`(${source})`)({ ...fixtureConfig, config_revision: 2 });
+	agent.heartbeat(false);
+	driveCriminal(6);
+	expect(f.root.style.display).toBe("block");
+	expect(agent.snapshot().transport.order.key).toBe(order.key);
+	f.root.querySelector(".main").prepend(warehouse);
+	driveCriminal(6);
+	expect(f.calls).toEqual(["weed"]);
+});
+test("transport confirms fractional rows and dispatches in one owned visit through native acknowledgements", () => {
+	const f = transportFixture();
+	const ack = transportAcks();
+	w.methlab_capacity = 0.25;
+	w.xtclab_capacity = 0.45;
+	w.weedfarm_capacity = 0.6;
+	const calls = [];
+	for (const row of f.root.querySelectorAll(".order")) {
+		const progress = row.querySelector(".progress");
+		const resource = ["meth", "xtc", "weed"].find((kind) =>
+			row.querySelector(`.order_type .${kind}`),
+		);
+		const amount = resource === "meth" ? 0.25 : resource === "xtc" ? 0.45 : 0.6;
+		progress.setAttribute(
+			"data-val",
+			String(
+				Number(progress.getAttribute("data-max")) - (resource ? amount : 0),
+			),
+		);
+		row.querySelector(".button_green_128x44").addEventListener("click", () => {
+			calls.push(resource);
+			progress.setAttribute("data-val", progress.getAttribute("data-max"));
+			w[resource === "weed" ? "weedfarm_capacity" : `${resource}lab_capacity`] =
+				0;
+			ack("transport:donate");
+		});
+	}
+	f.root.querySelector(".produce").addEventListener("click", () => {
+		calls.push("deliver");
+		w.document.body.insertAdjacentHTML(
+			"beforeend",
+			'<div id="dialog_transportcompany" style="display:none"><div class="timedetail"><i data-cdtimer="36000"></i></div></div>',
+		);
+		ack("transport:deliver");
+	});
+	driveCriminal(15);
+	expect(calls).toEqual(["meth", "weed", "xtc", "deliver"]);
+	expect(agent.snapshot().transport.pending).toBeNull();
+});
+test("transport progress without a native acknowledgement stays pending through repeated scans and restart", () => {
+	const f = transportFixture();
+	f.root
+		.querySelector("#transportorder_14269885 .button_green_128x44")
+		.addEventListener("click", () => {
+			f.root
+				.querySelector("#transportorder_14269885 .progress")
+				.setAttribute("data-val", "959.74");
+		});
+	driveCriminal(8);
+	expect(agent.snapshot().transport.pending?.amount).toBe(959.74);
+	agent = w.eval(`(${source})`)({ ...fixtureConfig, config_revision: 2 });
+	agent.heartbeat(false);
+	now += 6000;
+	agent.heartbeat(false);
+	driveCriminal(12);
+	expect(f.calls).toEqual(["weed"]);
+	expect(agent.snapshot().transport.pending).not.toBeNull();
+});
+test("ready transport retries dispatch when the final occupied slot becomes free", () => {
+	const f = transportFixture();
+	for (const progress of f.root.querySelectorAll(".order .progress"))
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+	let delivered = 0;
+	f.root.querySelector(".produce").addEventListener("click", () => delivered++);
+	w.stats_timers = 8;
+	driveCriminal(8);
+	expect(delivered).toBe(0);
+	// The ordinary 5-minute scan must not delay newly available dispatch.
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div class="dialog" id="dialog_transportcompany" style="display:none"><button class="button offers">Warehouse</button><button class="close">Close</button></div>',
+	);
+	const parent = w.document.querySelector("#dialog_transportcompany");
+	w.document
+		.querySelector("#transportcompany .tip")
+		.addEventListener("click", () => {
+			parent.style.display = "block";
+		});
+	parent.querySelector(".offers").addEventListener("click", () => {
+		parent.style.display = "none";
+		f.root.style.display = "block";
+	});
+	w.stats_timers = 7;
+	driveCriminal(8);
+	expect(delivered).toBe(1);
+});
+test("hidden cached stock cannot be restamped as fresh inventory every warehouse scan", () => {
+	const f = transportFixture();
+	delete w.weedfarm_capacity;
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div id="dialog_weedfarm" style="display:none"><div class="stat_weed"><i class="progress" data-val="959.74"></i></div></div>',
+	);
+	driveCriminal(8);
+	expect(f.calls).toEqual([]);
+});
+test("an active native transport trip prevents redispatch from cached completed warehouse rows", () => {
+	const f = transportFixture();
+	for (const progress of f.root.querySelectorAll(".order .progress"))
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div id="dialog_transportcompany" style="display:none"><div class="timedetail"><i data-cdtimer="36000"></i></div></div>',
+	);
+	let delivered = 0;
+	f.root.querySelector(".produce").addEventListener("click", () => delivered++);
+	driveCriminal(10);
+	expect(delivered).toBe(0);
+	now += 301000;
+	agent.heartbeat(false);
+	f.root.style.display = "block";
+	driveCriminal(10);
+	expect(delivered).toBe(0);
+});
+test("an unreadable native travel timer cannot authorize dispatch", () => {
+	const f = transportFixture();
+	for (const progress of f.root.querySelectorAll(".order .progress"))
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div id="dialog_transportcompany" style="display:none"><div class="timedetail"><i data-cdtimer="unknown"></i></div></div>',
+	);
+	let delivered = 0;
+	f.root.querySelector(".produce").addEventListener("click", () => delivered++);
+	driveCriminal(10);
+	expect(delivered).toBe(0);
+});
+test("missing countdown in a native travel region cannot authorize dispatch", () => {
+	const f = transportFixture();
+	for (const progress of f.root.querySelectorAll(".order .progress"))
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div id="dialog_transportcompany" style="display:none"><div class="timedetail">Travelling</div></div>',
+	);
+	let delivered = 0;
+	f.root.querySelector(".produce").addEventListener("click", () => delivered++);
+	driveCriminal(10);
+	expect(delivered).toBe(0);
+});
+test("transport acknowledgement with partial progress remains uncertain across reinjection", () => {
+	const f = transportFixture();
+	const ack = transportAcks();
+	driveCriminal(6);
+	ack("transport:donate");
+	f.root
+		.querySelector("#transportorder_14269885 .progress")
+		.setAttribute("data-val", "1");
+	driveCriminal(6);
+	expect(agent.snapshot().transport.pending?.amount).toBe(959.74);
+	agent = w.eval(`(${source})`)({ ...fixtureConfig, config_revision: 2 });
+	agent.heartbeat(false);
+	ack("transport:donate");
+	driveCriminal(6);
+	expect(f.calls).toEqual(["weed"]);
+	expect(agent.snapshot().transport.pending?.amount).toBe(959.74);
+});
+test("native no_resources needs its command acknowledgement before clearing a transport pending donation", () => {
+	const f = transportFixture();
+	const ack = transportAcks();
+	driveCriminal(4);
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		'<div class="dialog no_resources" id="dialog_notification"><button class="button first">Close</button></div>',
+	);
+	const notification = w.document.querySelector("#dialog_notification");
+	notification.querySelector("button").addEventListener("click", () => {
+		notification.style.display = "none";
+	});
+	driveCriminal(3);
+	expect(agent.snapshot().transport.pending).not.toBeNull();
+	ack("transport:donate");
+	driveCriminal(8);
+	expect(agent.snapshot().transport.pending).toBeNull();
+	expect(agent.snapshot().transport.stocks.weed.amount).toBe(0);
+	expect(f.calls).toEqual(["weed"]);
 });
 function methFixture(premium = false) {
 	const f = transportFixture();
@@ -927,6 +1134,227 @@ test("a changed premium Meth production control blocks cooking", () => {
 	const cooked = methFixture(true);
 	driveCriminal(15);
 	expect(cooked()).toBe(0);
+});
+
+function lazyFactoryFixture(kind = "meth", options = {}) {
+	const defaults = JSON.parse(
+		readFileSync(
+			new URL("../config/bidi-defaults.json", import.meta.url),
+			"utf8",
+		),
+	);
+	const factory = {
+		...defaults.modules.production.factories.find(
+			(f) => f.id === `${kind}_produce`,
+		),
+		...options.spec,
+	};
+	setup({
+		policies: [
+			{
+				name: "production_manager",
+				kind: "production",
+				enabled: true,
+				reserve_slots: 0,
+				factories: [factory],
+				scheduled: [],
+			},
+		],
+	});
+	w.document.querySelector("#moneypress").remove();
+	w.document
+		.querySelector("#imperium")
+		.insertAdjacentHTML(
+			"beforeend",
+			`<div id="${kind === "meth" ? "moneypress" : "swissbank"}"></div><div id="${kind}lab"><button class="tip">Lab</button></div>`,
+		);
+	w.emp = kind === "meth" ? 1 : 2;
+	w.stats_cash = options.cash ?? 1000000;
+	w[`${kind}lab_capacity`] = options.stock ?? 0;
+	const calls = [];
+	let remaining = options.remaining ?? 0;
+	const parent = () => w.document.querySelector(`#dialog_${kind}lab`);
+	w.document.querySelector(`#${kind}lab .tip`).addEventListener("click", () => {
+		calls.push("parent");
+		if (!parent()) {
+			w.document.body.insertAdjacentHTML(
+				"beforeend",
+				`<div class="dialog" id="dialog_${kind}lab"><button class="close">Close</button><div class="stat_${kind}"><i class="progress" data-val="${options.stock ?? 0}" data-max="${kind === "meth" ? 350 : 190}"></i></div><div class="stat_cooking"><i class="progress" data-val="${kind === "meth" ? 60 : 55}" data-max="${kind === "meth" ? 60 : 77}"></i></div><i data-cdtimer="${remaining}"></i><button class="button lab">Recipe</button></div>`,
+			);
+			parent()
+				.querySelector(".close")
+				.addEventListener("click", () => {
+					parent().style.display = "none";
+				});
+			parent()
+				.querySelector(".lab")
+				.addEventListener("click", () => {
+					calls.push("recipe");
+					parent().style.display = "none";
+					w.document.querySelector(`#dialog_${kind}lab_lab`)?.remove();
+					w.document.body.insertAdjacentHTML(
+						"beforeend",
+						`<div class="dialog" id="dialog_${kind}lab_lab"><button class="close">Close</button><button class="button ${kind === "meth" ? "produce" : "cash"}" onclick="${kind === "xtc" ? "if(!check_cash(50000,$(this)))return;" : ""}if(!check_timers(1,$(this)))return;cmd('object:produce',{'type':'${kind}lab'});">Cook</button></div>`,
+					);
+					const recipe = w.document.querySelector(`#dialog_${kind}lab_lab`);
+					recipe.querySelector(".close").addEventListener("click", () => {
+						recipe.style.display = "none";
+					});
+					recipe.querySelector(".button").addEventListener("click", () => {
+						calls.push("cook");
+						recipe.style.display = "none";
+						parent()
+							.querySelector("[data-cdtimer]")
+							.setAttribute("data-cdtimer", kind === "meth" ? "7200" : "18000");
+					});
+				});
+		}
+		parent().style.display = "block";
+		parent()
+			.querySelector("[data-cdtimer]")
+			.setAttribute("data-cdtimer", String(remaining));
+	});
+	return {
+		calls,
+		parent,
+		factory,
+		setRemaining: (value) => {
+			remaining = value;
+		},
+	};
+}
+test("default Meth discovers an absent native parent and recipe without a transport goal", () => {
+	const f = lazyFactoryFixture();
+	driveCriminal(12);
+	expect(f.calls).toEqual(["parent", "recipe", "cook"]);
+});
+test("production waits for asynchronous native parent and recipe insertion", () => {
+	const f = lazyFactoryFixture("meth");
+	let deferredParent, deferredRecipe;
+	w.document.querySelector("#methlab .tip").addEventListener("click", () => {
+		deferredParent = f.parent();
+		deferredParent.remove();
+		deferredParent.querySelector(".lab").addEventListener("click", () => {
+			deferredRecipe = w.document.querySelector("#dialog_methlab_lab");
+			deferredRecipe.remove();
+		});
+	});
+	driveCriminal(3);
+	expect(f.calls).toEqual(["parent"]);
+	w.document.body.append(deferredParent);
+	driveCriminal(3);
+	expect(f.calls).toEqual(["parent", "recipe"]);
+	w.document.body.append(deferredRecipe);
+	driveCriminal(4);
+	expect(f.calls).toEqual(["parent", "recipe", "cook"]);
+});
+test("XTC discovers absent native parent then Lab and cooks only within observed maximum output capacity", () => {
+	const f = lazyFactoryFixture("xtc");
+	driveCriminal(12);
+	expect(f.calls).toEqual(["parent", "recipe", "cook"]);
+});
+test("XTC capacity uses observed 77 max output rather than 55 quantity", () => {
+	const f = lazyFactoryFixture("xtc", { stock: 130 });
+	driveCriminal(12);
+	expect(f.calls).toContain("parent");
+	expect(f.calls).not.toContain("cook");
+});
+test("XTC preserves cash reserve and explicit Meth goal gating remains optional", () => {
+	const f = lazyFactoryFixture("xtc", { cash: 149999 });
+	driveCriminal(12);
+	expect(f.calls).not.toContain("cook");
+	agent.stop();
+	w.happyDOM.abort();
+	const gated = lazyFactoryFixture("meth", {
+		spec: { objective_resource: "meth" },
+	});
+	driveCriminal(12);
+	expect(gated.calls).toEqual([]);
+});
+test("observed production countdown schedules one fresh inspection at completion without hidden timer drift", () => {
+	const f = lazyFactoryFixture("meth", { remaining: 120 });
+	driveCriminal(10);
+	expect(f.calls).toEqual(["parent"]);
+	now += 119000;
+	agent.heartbeat(false);
+	driveCriminal(10);
+	expect(f.calls).toEqual(["parent"]);
+	f.setRemaining(0);
+	now += 1000;
+	agent.heartbeat(false);
+	driveCriminal(12);
+	expect(f.calls).toEqual(["parent", "parent", "recipe", "cook"]);
+});
+test("a confirmed short production cycle restarts at native completion with no fixed five minute cooldown", () => {
+	const f = lazyFactoryFixture("meth");
+	const ack = transportAcks();
+	driveCriminal(12);
+	ack("object:produce");
+	driveCriminal(2);
+	f.parent().querySelector("[data-cdtimer]").setAttribute("data-cdtimer", "1");
+	driveCriminal(2);
+	f.setRemaining(0);
+	now += 1000;
+	agent.heartbeat(false);
+	driveCriminal(12);
+	expect(f.calls.filter((call) => call === "cook")).toHaveLength(2);
+});
+test("unreadable production parent backs off instead of reopening every tick", () => {
+	const f = lazyFactoryFixture("xtc");
+	w.document.querySelector("#xtclab .tip").addEventListener("click", () => {
+		f.parent().querySelector(".stat_cooking").remove();
+	});
+	driveCriminal(4);
+	now += 1100;
+	agent.heartbeat(false);
+	driveCriminal(12);
+	expect(f.calls).toEqual(["parent"]);
+	now += 6000;
+	agent.heartbeat(false);
+	driveCriminal(4);
+	expect(f.calls).toEqual(["parent", "parent"]);
+});
+test("unknown production timer prevents cooking after discovery", () => {
+	const f = lazyFactoryFixture("meth");
+	w.document.querySelector("#methlab .tip").addEventListener("click", () => {
+		f.parent()
+			.querySelector("[data-cdtimer]")
+			.setAttribute("data-cdtimer", "unknown");
+	});
+	driveCriminal(6);
+	expect(f.calls).toEqual(["parent"]);
+});
+test("production rechecks empire immediately before cooking from a discovered recipe", () => {
+	const f = lazyFactoryFixture("meth");
+	driveCriminal(2);
+	w.emp = 2;
+	w.document.querySelector("#moneypress").remove();
+	w.document
+		.querySelector("#imperium")
+		.insertAdjacentHTML("beforeend", '<div id="swissbank"></div>');
+	driveCriminal(5);
+	expect(f.calls).toEqual(["parent", "recipe"]);
+});
+test("confirmed unrelated car theft does not invalidate a showroom scan without a missing target", () => {
+	const calls = criminalFixture();
+	agent.stop();
+	const saved = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
+	saved.records.showroom_scan = { next: now + 1800000 };
+	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(saved));
+	agent = w.eval(`(${source})`)({ ...fixtureConfig, config_revision: 2 });
+	agent.heartbeat(false);
+	driveCriminal();
+	const car = calls.find((call) => call.family === "cars");
+	if (!car) {
+		confirmCriminal(calls[0]);
+		driveCriminal();
+	}
+	confirmCriminal(calls.find((call) => call.family === "cars"));
+	driveCriminal(3);
+	expect(
+		JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1")).records
+			.showroom_scan.next,
+	).toBe(saved.records.showroom_scan.next);
 });
 test("live Succeed crimes repeats mastered crimes and learns acknowledged location timing", () => {
 	const calls = criminalFixture();
