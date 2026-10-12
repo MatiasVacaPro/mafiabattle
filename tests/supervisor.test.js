@@ -1012,6 +1012,114 @@ test("missing countdown in a native travel region cannot authorize dispatch", ()
 	driveCriminal(10);
 	expect(delivered).toBe(0);
 });
+function cachedTravelFixture(seconds, refreshed = "0") {
+	const f = transportFixture();
+	f.root.style.display = "none";
+	w.document.body.insertAdjacentHTML(
+		"beforeend",
+		`<div class="dialog" id="dialog_transportcompany" style="display:none"><div class="timedetail"><i data-cdtimer="${seconds}"></i></div><button class="button offers">Warehouse</button><button class="close">Close</button></div>`,
+	);
+	const parent = w.document.querySelector("#dialog_transportcompany");
+	let opened = 0,
+		remaining = refreshed;
+	w.document
+		.querySelector("#transportcompany .tip")
+		.addEventListener("click", () => {
+			opened++;
+			f.root.style.display = "none";
+			parent.style.display = "block";
+			parent
+				.querySelector("[data-cdtimer]")
+				.setAttribute("data-cdtimer", remaining);
+		});
+	parent.querySelector(".close").addEventListener("click", () => {
+		parent.style.display = "none";
+	});
+	parent.querySelector(".offers").addEventListener("click", () => {
+		parent.style.display = "none";
+		f.root.style.display = "block";
+	});
+	return {
+		...f,
+		parent,
+		opened: () => opened,
+		setRemaining: (value) => {
+			remaining = value;
+		},
+	};
+}
+test("cached hidden travel permits native completion refresh after due", () => {
+	const f = cachedTravelFixture("1");
+	driveCriminal(8);
+	expect(f.calls).toEqual([]);
+	now += 31000;
+	agent.heartbeat(false);
+	driveCriminal(10);
+	expect(f.opened()).toBeGreaterThan(0);
+	expect(f.calls).toEqual(["weed"]);
+});
+test("unreadable cached travel permits bounded native revalidation before an idle warehouse action", () => {
+	const f = cachedTravelFixture("unknown");
+	driveCriminal(8);
+	expect(f.calls).toEqual([]);
+	now += 6000;
+	agent.heartbeat(false);
+	driveCriminal(10);
+	expect(f.opened()).toBe(1);
+	expect(f.calls).toEqual(["weed"]);
+});
+test("long stale travel gets bounded first refresh then uses freshly observed absolute completion", () => {
+	const f = cachedTravelFixture("43200", "120");
+	driveCriminal(8);
+	now += 31000;
+	agent.heartbeat(false);
+	driveCriminal(10);
+	expect(f.opened()).toBe(1);
+	expect(f.calls).toEqual([]);
+	now += 31000;
+	agent.heartbeat(false);
+	driveCriminal(10);
+	expect(f.opened()).toBe(1);
+	f.setRemaining("0");
+	w.weedfarm_capacity = 10;
+	now += 90000;
+	agent.heartbeat(false);
+	driveCriminal(10);
+	expect(f.opened()).toBe(2);
+	expect(f.calls).toEqual(["weed"]);
+});
+test("an incomplete fresh travel read stays blocked when its cached timer region disappears", () => {
+	const f = cachedTravelFixture("unknown", "unknown");
+	driveCriminal(8);
+	now += 6000;
+	agent.heartbeat(false);
+	driveCriminal(4);
+	now += 1100;
+	agent.heartbeat(false);
+	driveCriminal(8);
+	f.parent.querySelector(".timedetail").remove();
+	f.root.style.display = "block";
+	driveCriminal(8);
+	expect(f.calls).toEqual([]);
+});
+test("elapsed travel and a fresh idle read never confirm an uncertain delivery receipt", () => {
+	const f = cachedTravelFixture("0");
+	for (const progress of f.root.querySelectorAll(".order .progress"))
+		progress.setAttribute("data-val", progress.getAttribute("data-max"));
+	let delivered = 0;
+	f.root.querySelector(".produce").addEventListener("click", () => {
+		delivered++;
+		f.parent.querySelector("[data-cdtimer]").setAttribute("data-cdtimer", "1");
+	});
+	driveCriminal(12);
+	expect(delivered).toBe(1);
+	expect(agent.snapshot().transport.pending?.kind).toBe("deliver");
+	now += 31000;
+	agent.heartbeat(false);
+	driveCriminal(12);
+	expect(delivered).toBe(1);
+	expect(agent.snapshot().transport.pending?.kind).toBe("deliver");
+});
 test("transport acknowledgement with partial progress remains uncertain across reinjection", () => {
 	const f = transportFixture();
 	const ack = transportAcks();

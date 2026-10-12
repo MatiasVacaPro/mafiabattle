@@ -269,16 +269,45 @@ function createMafiaAgent(config) {
 	}
 	function transportTravelBlocked() {
 		const parent = query("#dialog_transportcompany");
-		return all(".timedetail", parent).some((region) => {
-			const timers = all("[data-cdtimer]", region);
-			return (
-				(!timers.length && displayed(region, parent)) ||
-				timers.some((el) => {
-					const seconds = number(el.getAttribute("data-cdtimer"));
-					return seconds === null || seconds > 0;
-				})
-			);
-		});
+		return (
+			records.transport_travel?.requires_refresh === true ||
+			all(".timedetail", parent).some((region) => {
+				const timers = all("[data-cdtimer]", region);
+				return (
+					(!timers.length && displayed(region, parent)) ||
+					timers.some((el) => {
+						const seconds = number(el.getAttribute("data-cdtimer"));
+						return seconds === null || seconds > 0;
+					})
+				);
+			})
+		);
+	}
+	function transportTravelSeconds() {
+		const timers = all("#dialog_transportcompany .timedetail [data-cdtimer]");
+		if (!timers.length) return null;
+		const values = timers.map((el) => number(el.getAttribute("data-cdtimer")));
+		return values.some((value) => value === null)
+			? null
+			: Math.max(0, ...values);
+	}
+	function scheduleTransportTravel(seconds, fresh = false) {
+		const previous = records.transport_travel;
+		const failures = seconds === null ? (previous?.failures || 0) + 1 : 0;
+		const delay =
+			seconds === null
+				? [5000, 15000, 30000][Math.min(failures - 1, 2)]
+				: seconds * 1000;
+		const next = now() + (fresh ? delay : Math.min(delay, 30000));
+		records.transport_travel = {
+			next,
+			completion_at: fresh && seconds !== null ? next : null,
+			requires_refresh: !fresh || seconds !== 0,
+			document_epoch: globalThis.performance?.timeOrigin,
+			failures,
+		};
+		records.transport_scan = { next };
+		persist();
 	}
 	function planTransportDispatch(
 		empire = currentEmpire(),
@@ -2747,11 +2776,35 @@ function createMafiaAgent(config) {
 			active.phase = "close";
 			return false;
 		}
-		if (transportTravelBlocked()) {
-			records.transport_scan = { next: now() + 30000 };
-			active.phase = "close";
-			persist();
-			return false;
+		if (transportTravelBlocked() || active.refreshingTravel) {
+			if (!displayed(query("#dialog_transportcompany"))) {
+				const travel = records.transport_travel;
+				if (
+					!travel ||
+					travel.document_epoch !== globalThis.performance?.timeOrigin
+				)
+					scheduleTransportTravel(transportTravelSeconds());
+				if (now() < records.transport_travel.next) {
+					records.transport_scan = { next: records.transport_travel.next };
+					active.phase = "close";
+					persist();
+					return false;
+				}
+				active.refreshingTravel = true;
+				return openStep(
+					"#imperium #transportcompany .tip",
+					"#dialog_transportcompany",
+				);
+			}
+			const seconds = transportTravelSeconds();
+			if (seconds === null && now() - active.openedAt <= config.ack_timeout_ms)
+				return false;
+			scheduleTransportTravel(seconds, true);
+			active.refreshingTravel = false;
+			if (seconds !== 0 || transportTravelBlocked()) {
+				active.phase = "close";
+				return false;
+			}
 		}
 		if (!displayed(query("#dialog_transportcompany_order"))) {
 			if (!displayed(query("#dialog_transportcompany")))
