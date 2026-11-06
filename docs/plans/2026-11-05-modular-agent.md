@@ -16,7 +16,7 @@ Se conserva la API pública (`__mafiaBot`), el orden síncrono de acciones, el f
 - [x] F7: dividir la suite del supervisor por dominio conservando todas sus pruebas y fixtures aislados.
 - [x] Python: separar showroom, proceso y bucle supervisor; quitar persistencia duplicada; defaults y validación junto a cada política mediante registro estable; conservar configuración efectiva.
 - [x] Verificar `just test`, `just check`, paridad de configuración y estado legado; guía de arquitectura escrita y revisión independiente sin hallazgos accionables contra `87c091b`.
-- [x] Comprobar `just dry-run`: rechazado por el lock compartido del bot activo; bundle y configuración reales comprobados mediante fixtures, sin sustituir el residente activo.
+- [x] Comprobar `just dry-run`: rechazado inicialmente por el lock compartido del bot activo; tras autorización expresa y `./run.sh stop`, completados dry-run real, `scripts/verify_live.py --auth-recovery` y prueba operativa acotada de 75 s con recibos `dom_updated` y preservación de `mafia-bidi-state-v1`.
 - [x] Actualizar la nota temática de Obsidian y su entrada existente en el MOC; auditoría estricta de ambas notas con 0 incidencias y apertura solicitada.
 
 ## Evidencia inicial
@@ -29,4 +29,13 @@ La implementación conserva v1 como adaptador de `records`, sin migración v2 ni
 
 Verificación local: 67 Python y 424 JS pasan; `just check` sin advertencias. Comparación independiente con la base: ambas configuraciones originales y las políticas de la copia vault siguen iguales. La ejecución del nuevo residente en el navegador queda pendiente porque el otro bot continúa activo. Las revisiones iniciales AGY se recibieron; los dos encargos finales agotaron 300 segundos sin resultado y se sustituyeron por una revisión independiente del checkout.
 
-La revisión independiente final no encontró regresiones accionables contra `87c091b`. Se comprobó la equivalencia de las funciones extraídas, el dispatch por descriptores, la secuencia del scheduler, la conservación de recibos y las rutas del supervisor Python. Los cambios quedan en la rama de refactorización, sin fusionar, publicar ni reiniciar el bot en ejecución.
+La revisión independiente final no encontró regresiones accionables contra `87c091b`. Se comprobó la equivalencia de las funciones extraídas, el dispatch por descriptores, la secuencia del scheduler, la conservación de recibos y las rutas del supervisor Python.
+
+## Cierre con validación real (relevo 2026-11-05)
+
+Con autorización explícita del usuario se detuvo `vault_boats_only/main_vault_boats.py` (`./run.sh stop`, copia conservada sin cambios) y se completó la validación real en `Zen Antigravity.app` (`antigravity.Default`, cuenta `mati792`):
+
+- `just test`: 70 Python + 424 JS aprobadas; `just check` limpio.
+- `scripts/verify_live.py`: sustituido `location.reload()` por `location.replace(target_url)`, añadida espera mínima de 15 s de inactividad humana antes de navegar, diferido `auto_login` hasta tras la navegación y exigida observación de `GET` en el contexto principal. Aprobado con `--auth-recovery` (`GET/GET`, `mati792`, `RUNNING`, `game_actions=0`).
+- Prueba operativa limitada (75 s): verificadas pausa por API del guard, preservación de `paused_until` y recibos v1 tras reinyección, 11 recibos `dom_updated` de `health_purchase` (`11 → 401`, cash), 2 `dom_updated` de `criminal_boats_2`/`criminal_boats_1` y conservación sin reintento del recibo incierto `scrapyard_cash` (`pending=true` por deriva de 5 cash del acumulador JS frente al servidor bajo `require_cash_gain`).
+- Ambos procesos quedaron detenidos (`STOPPED`), sin preloads activos y con `runtime/bot.lock` libre, en la rama `refactor/modular-agent` sin push ni merge.

@@ -460,10 +460,13 @@ just test
 just check
 ```
 
-133 pruebas con servidor WebSocket local y Happy DOM: concurrencia, desconexión,
+494 pruebas locales (70 Python `unittest` y 424 Bun/Happy DOM; evolución desde las
+133 originales): concurrencia, desconexión,
 reattach, sesión ocupada, origen estricto, excepciones JS, pausa, lease,
 reinyección/configuración, duplicados, navegación sin respuesta, timers,
-controles premium y flujos de módulos.
+controles premium, paridad del bundle modular `1.4.0`, guardas de `verify_live.py`
+y flujos de módulos. Evidencia de validación real `1.4.0` en
+[docs/architecture/resident-agent.md](docs/architecture/resident-agent.md).
 
 Verificación real de recuperación global: Collections abierto con su control
 DOM observado y cerrado automáticamente por `return_to_city`; luego navegación

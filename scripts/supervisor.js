@@ -1,4 +1,5 @@
 /* Factory injected in the default page realm. No focus, scroll or WebDriver input. */
+// Manten la MODULARIDAD!
 // biome-ignore lint/correctness/noUnusedVariables: Serialized and invoked by the BiDi driver.
 function createMafiaAgent(config) {
 	const runtime = {};
