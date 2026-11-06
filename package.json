@@ -4,12 +4,13 @@
 	"description": "DOM fixtures for the MafiaBattle BiDi supervisor",
 	"private": true,
 	"scripts": {
-		"test": "bun test tests/supervisor.test.js"
+		"test": "bun test ./tests"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
+		"@biomejs/biome": "2.6.5",
 		"happy-dom": "^20.14.5"
 	}
 }

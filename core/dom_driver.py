@@ -1,9 +1,9 @@
 """Strict target selection and page-resident agent lifecycle."""
 import json
 from hashlib import sha256
-from pathlib import Path
 from urllib.parse import urlsplit
 
+from core.agent_bundle import load_agent_source
 from core.bidi_client import decode_remote
 
 
@@ -17,15 +17,7 @@ class DOMDriver:
         self.context = None
         self.created_context = None
         self.preloads = {}
-        scripts = Path(__file__).resolve().parents[1] / 'scripts'
-        supervisor = (scripts / 'supervisor.js').read_text()
-        planner = (scripts / 'empire_manager.js').read_text()
-        events = (scripts / 'event_objectives.js').read_text()
-        transport = (scripts / 'transport_planner.js').read_text()
-        showroom = (scripts / 'showroom_manager.js').read_text()
-        cigars = (scripts / 'cigar_offers.js').read_text()
-        boss = (scripts / 'boss_fighter.js').read_text()
-        self.source = f'function(config) {{{planner}\n{events}\n{transport}\n{showroom}\n{cigars}\n{boss}\nreturn ({supervisor})(config);}}'
+        self.source = load_agent_source()
 
     def matches(self, url):
         actual, expected = urlsplit(url), urlsplit(self.config['target_url'])

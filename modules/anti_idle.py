@@ -1,4 +1,8 @@
-class AntiIdle:
-    @staticmethod
-    def policy(settings):
-        return {'name': 'anti_idle', 'kind': 'anti_idle', **settings['anti_idle']}
+from modules.base import PolicyModule
+
+
+class AntiIdle(PolicyModule):
+    KEY = "anti_idle"
+    NAME = "anti_idle"
+    KIND = "anti_idle"
+    DEFAULTS = {"enabled": False, "keepalive_seconds": 60, "auto_login": True}

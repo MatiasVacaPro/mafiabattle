@@ -1,11 +1,9 @@
 import { afterEach, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { Window } from "happy-dom";
+import { loadAgentSource } from "../scripts/agent_source.js";
 
-const agentSource = readFileSync(
-	new URL("../scripts/supervisor.js", import.meta.url),
-	"utf8",
-);
+const agentSource = loadAgentSource();
 const transportSource = readFileSync(
 	new URL("../scripts/transport_planner.js", import.meta.url),
 	"utf8",
@@ -38,16 +36,38 @@ test("family tournament stays in II for a bounded work visit and returns to gym"
 		() => time,
 	);
 	planner.observe(2);
-	expect(planner.plan({ tournamentEmpire: 2 })).toBeNull();
-	time += 1800000;
-	expect(planner.plan({ tournamentEmpire: 2 }).to).toBe(1);
-	planner.observe(1);
-	expect(planner.plan({ tournamentEmpire: 2, gymPending: true })).toBeNull();
+	expect(
+		planner.plan({
+			tournamentEmpire: 2,
+		}),
+	).toBeNull();
 	time += 1800000;
 	expect(
-		planner.plan({ tournamentEmpire: 2, gymPending: true, gymActive: true }),
+		planner.plan({
+			tournamentEmpire: 2,
+		}).to,
+	).toBe(1);
+	planner.observe(1);
+	expect(
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: true,
+		}),
 	).toBeNull();
-	expect(planner.plan({ tournamentEmpire: 2, gymPending: false }).to).toBe(2);
+	time += 1800000;
+	expect(
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: true,
+			gymActive: true,
+		}),
+	).toBeNull();
+	expect(
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: false,
+		}).to,
+	).toBe(2);
 	expect(planner.plan()).toBeNull();
 });
 test("tournament reserves a home visit even after the daily gym is complete", () => {
@@ -64,9 +84,19 @@ test("tournament reserves a home visit even after the daily gym is complete", ()
 		() => time,
 	);
 	planner.observe(1);
-	expect(planner.plan({ tournamentEmpire: 2, gymPending: false })).toBeNull();
+	expect(
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: false,
+		}),
+	).toBeNull();
 	time += 1800000;
-	expect(planner.plan({ tournamentEmpire: 2, gymPending: false })?.to).toBe(2);
+	expect(
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: false,
+		})?.to,
+	).toBe(2);
 });
 test("overdue tournament home visit leaves remaining gym sessions for the next visit", () => {
 	let time = 100000;
@@ -84,11 +114,18 @@ test("overdue tournament home visit leaves remaining gym sessions for the next v
 	planner.observe(1);
 	time += 1800000;
 	expect(
-		planner.plan({ tournamentEmpire: 2, gymPending: true, gymActive: true }),
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: true,
+			gymActive: true,
+		}),
 	).toBeNull();
 	expect(
-		planner.plan({ tournamentEmpire: 2, gymPending: true, gymActive: false })
-			?.to,
+		planner.plan({
+			tournamentEmpire: 2,
+			gymPending: true,
+			gymActive: false,
+		})?.to,
 	).toBe(2);
 });
 const collectors = {
@@ -119,14 +156,24 @@ const collectors = {
 	],
 };
 function fixture(map = 1, extra = {}) {
-	w = new Window({ url: "https://www.mafiabattle.com/es/" });
+	w = new Window({
+		url: "https://www.mafiabattle.com/es/",
+	});
 	clock = 100000;
 	w.Date.now = () => clock;
 	Object.defineProperty(w, "performance", {
 		configurable: true,
-		value: { timeOrigin: 10000, now: () => clock },
+		value: {
+			timeOrigin: 10000,
+			now: () => clock,
+		},
 	});
-	w.HTMLElement.prototype.getClientRects = () => [{ width: 10, height: 10 }];
+	w.HTMLElement.prototype.getClientRects = () => [
+		{
+			width: 10,
+			height: 10,
+		},
+	];
 	w.document.body.innerHTML =
 		'<div id="game"><div id="imperium"></div></div><div id="top_bar"></div><span class="player1_username">mati792</span><div class="dialog" id="dialog_airport" style="display:none"><i data-cdtimer="0"></i><button class="button cash" onclick="if(!check_cash(100000,this))return;cmd(\'airport:flyfree\',\'\',true)">Cash</button><button class="button produce" style="display:none" onclick="cmd(\'airport:flyfree\',\'\',true)">Free</button><button class="button diamonds" onclick="cmd(\'airport:fly\')">Premium</button><button class="close" onclick="close_dialog(\'airport\')">Close</button></div>';
 	const calls = [],
@@ -143,7 +190,9 @@ function fixture(map = 1, extra = {}) {
 	const ack = (command) =>
 		onSuccess?.(
 			{},
-			{ status: 200 },
+			{
+				status: 200,
+			},
 			{
 				url: `https://www.mafiabattle.com/cmd/?c=${encodeURIComponent(command)}`,
 			},
@@ -215,9 +264,7 @@ function fixture(map = 1, extra = {}) {
 		...extra.config,
 	};
 	const install = () => {
-		agent = w.eval(
-			`(()=>{${helperSource};${transportSource};return (${agentSource});})()`,
-		)(config);
+		agent = w.eval(`(${agentSource})`)(config);
 		agent.heartbeat(false);
 	};
 	install();
@@ -303,7 +350,12 @@ test("tournament cycles I to II and back while running local work and boats", ()
 				direct_rows: true,
 				root: "#dialog_boats",
 				command: "boatcompany:perform",
-				route: [{ selector: "#boatcompany .tip", root: "#dialog_boats" }],
+				route: [
+					{
+						selector: "#boatcompany .tip",
+						root: "#dialog_boats",
+					},
+				],
 			},
 		],
 	};
@@ -414,7 +466,10 @@ test("an overdue tournament flight never interrupts an already active boss fight
 					family_tournament_enabled: true,
 					activities: [],
 				},
-				{ ...empirePolicy, family_tournament_enabled: true },
+				{
+					...empirePolicy,
+					family_tournament_enabled: true,
+				},
 			],
 		},
 	});
@@ -449,7 +504,9 @@ test("diagnostic inspection preserves accumulated empire residence", () => {
 	expect(agent.snapshot().empires.primary_ms).toBe(original.primary_ms);
 });
 test("diagnostic inspection retains an unconfirmed flight across policy removal", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	f.step(7200000);
 	for (let i = 0; i < 8; i++) f.step();
 	expect(agent.snapshot().empires.pending?.to).toBe(2);
@@ -629,7 +686,9 @@ test("does not infer Empire II from airport alone or conflicting map markers", (
 	expect(agent.snapshot().empires.current).toBe(null);
 });
 test("does not repeat an uncertain flight after reinjection", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	f.step();
 	f.step(7200000);
 	f.step();
@@ -644,7 +703,10 @@ test("does not repeat an uncertain flight after reinjection", () => {
 test("human pause prevents a due flight and manual arrival is reconciled without a second flight", () => {
 	const f = fixture();
 	f.step();
-	agent.handleUserEvent({ isTrusted: true, type: "mousedown" });
+	agent.handleUserEvent({
+		isTrusted: true,
+		type: "mousedown",
+	});
 	f.step(14000);
 	expect(f.calls.length).toBe(0);
 	f.swap(2);
@@ -654,10 +716,19 @@ test("human pause prevents a due flight and manual arrival is reconciled without
 	expect(f.calls.length).toBe(0);
 });
 test("HTTP success and an optimistic local reset alone do not confirm cash collection", () => {
-	const entry = { ...collectors.collectors[1], require_cash_gain: true };
+	const entry = {
+		...collectors.collectors[1],
+		require_cash_gain: true,
+	};
 	const f = fixture(2, {
 		config: {
-			policies: [{ ...collectors, collectors: [entry] }, empirePolicy],
+			policies: [
+				{
+					...collectors,
+					collectors: [entry],
+				},
+				empirePolicy,
+			],
 		},
 	});
 	f.step();
@@ -689,7 +760,14 @@ test("alcohol waits for space in the bar and for its upgrade to finish", () => {
 		upgrade_root: "#dialog_mafiabar",
 	};
 	const f = fixture(2, {
-		config: { policies: [{ ...collectors, collectors: [spec] }] },
+		config: {
+			policies: [
+				{
+					...collectors,
+					collectors: [spec],
+				},
+			],
+		},
 	});
 	w.document
 		.querySelector("#imperium")
@@ -751,7 +829,13 @@ test("a lost cash reply reconciles from a fresh document instead of replaying th
 	};
 	const f = fixture(2, {
 		config: {
-			policies: [{ ...collectors, collectors: [entry] }, empirePolicy],
+			policies: [
+				{
+					...collectors,
+					collectors: [entry],
+				},
+				empirePolicy,
+			],
 		},
 	});
 	f.step();
@@ -767,13 +851,21 @@ test("a lost cash reply reconciles from a fresh document instead of replaying th
 });
 test("unconfirmed collection reloads for readback after sixty seconds and respects human pause", () => {
 	const f = fixture(2, {
-		config: { recovery: { enabled: true, minimum_reload_seconds: 300 } },
+		config: {
+			recovery: {
+				enabled: true,
+				minimum_reload_seconds: 300,
+			},
+		},
 	});
 	const reloads = [];
 	w.location.replace = (url) => reloads.push(url);
 	f.step();
 	clock += 60000;
-	agent.handleUserEvent({ isTrusted: true, type: "keydown" });
+	agent.handleUserEvent({
+		isTrusted: true,
+		type: "keydown",
+	});
 	f.step();
 	expect(reloads.length).toBe(0);
 	f.step(15000);
@@ -781,7 +873,9 @@ test("unconfirmed collection reloads for readback after sixty seconds and respec
 	expect(f.collected.length).toBe(1);
 });
 test("a lost flight reply needs fresh native empire metadata to reconcile its origin", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	f.step();
 	f.step(7200000);
 	f.step();
@@ -795,29 +889,34 @@ test("a lost flight reply needs fresh native empire metadata to reconcile its or
 	f.step(60000);
 	expect(f.calls.length).toBe(1);
 });
-
 test("native airport reload is removed before evaluation and deferred as GET during human activity", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	const reloads = [];
 	w.location.replace = (url) => reloads.push(url);
 	f.step();
 	f.step(7200000);
 	f.step();
-	const options = { url: "/cmd/?c=airport:flyfree" };
+	const options = {
+		url: "/cmd/?c=airport:flyfree",
+	};
 	for (const filter of f.filters) filter(options);
 	const response = options.dataFilter?.(
 		"document.location.reload();update_user_stats(42);",
 		"script",
 	);
 	expect(response).toBe("update_user_stats(42);");
-	agent.handleUserEvent({ isTrusted: true, type: "mousedown" });
+	agent.handleUserEvent({
+		isTrusted: true,
+		type: "mousedown",
+	});
 	f.step();
 	expect(reloads).toEqual([]);
 	f.step(15001);
 	expect(reloads).toEqual(["https://www.mafiabattle.com/es/"]);
 	expect(f.calls).toEqual(["airport:flyfree"]);
 });
-
 test("map metadata mismatch blocks resource collections and flights", () => {
 	const f = fixture(1);
 	w.emp = "2";
@@ -827,20 +926,25 @@ test("map metadata mismatch blocks resource collections and flights", () => {
 	expect(f.calls).toEqual([]);
 	expect(agent.snapshot().empires.current).toBe(null);
 });
-
 test("fresh origin DOM without native metadata never clears an uncertain flight", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	f.step();
 	f.step(7200000);
 	f.step();
 	delete w.emp;
-	Object.defineProperty(w.performance, "timeOrigin", { value: 11000 });
+	Object.defineProperty(w.performance, "timeOrigin", {
+		value: 11000,
+	});
 	f.step(60001);
 	expect(agent.snapshot().empires.pending?.to).toBe(2);
 	expect(f.calls).toHaveLength(1);
 });
 test("airport filter preserves quoted reload text and removes same-line native reloads", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	f.step();
 	const options = {
 		url: "/cmd/?c=airport:flyfree",
@@ -859,7 +963,9 @@ test("airport protection does not alter other game responses or unrelated origin
 		"/cmd/?c=object:collect",
 		"https://example.com/cmd/?c=airport:flyfree",
 	]) {
-		const options = { url };
+		const options = {
+			url,
+		};
 		for (const filter of f.filters) filter(options);
 		expect(options.dataFilter).toBeUndefined();
 	}
@@ -886,13 +992,17 @@ test("a native queued flight receives the same protection without affecting ordi
 	expect(ordinary.dataFilter).toBeUndefined();
 });
 test("confirmed flight receipt survives GET reinjection and clears only at the fresh destination", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	const reloads = [];
 	w.location.replace = (url) => reloads.push(url);
 	f.step();
 	f.step(7200000);
 	f.step();
-	const options = { url: "/cmd/?c=airport:flyfree" };
+	const options = {
+		url: "/cmd/?c=airport:flyfree",
+	};
 	for (const filter of f.filters) filter(options);
 	options.dataFilter(
 		"document.location.reload();update_user_stats(42);",
@@ -904,7 +1014,9 @@ test("confirmed flight receipt survives GET reinjection and clears only at the f
 	w.document
 		.querySelector("#dialog_airport i")
 		.setAttribute("data-cdtimer", "1350");
-	Object.defineProperty(w.performance, "timeOrigin", { value: 11000 });
+	Object.defineProperty(w.performance, "timeOrigin", {
+		value: 11000,
+	});
 	agent.stop();
 	delete w.__mafiaBot; // A real GET discards the old realm and its recovery latch.
 	f.install();
@@ -919,19 +1031,25 @@ test("confirmed flight receipt survives GET reinjection and clears only at the f
 	expect(f.calls).toEqual(["airport:flyfree"]);
 });
 test("a fresh but wrong city preserves the confirmed flight and suspends actions instead of flying again", () => {
-	const f = fixture(1, { noFlightResponse: true });
+	const f = fixture(1, {
+		noFlightResponse: true,
+	});
 	w.location.replace = () => {};
 	f.step();
 	f.step(7200000);
 	f.step();
-	const options = { url: "/cmd/?c=airport:flyfree" };
+	const options = {
+		url: "/cmd/?c=airport:flyfree",
+	};
 	for (const filter of f.filters) filter(options);
 	options.dataFilter(
 		"document.location.reload();update_user_stats(42);",
 		"script",
 	);
 	f.step();
-	Object.defineProperty(w.performance, "timeOrigin", { value: 11000 });
+	Object.defineProperty(w.performance, "timeOrigin", {
+		value: 11000,
+	});
 	agent.stop();
 	delete w.__mafiaBot;
 	f.install();
@@ -949,7 +1067,14 @@ test("fresh authoritative stock releases an unresolved old collector receipt wit
 		allow_readback: true,
 	};
 	const f = fixture(2, {
-		config: { policies: [{ ...collectors, collectors: [entry] }] },
+		config: {
+			policies: [
+				{
+					...collectors,
+					collectors: [entry],
+				},
+			],
+		},
 	});
 	f.step();
 	f.step(60000);
@@ -983,7 +1108,10 @@ test("a missing persisted entry timestamp never counts time since Unix epoch", (
 	fixture(2);
 	const planner = w.eval(`(${helperSource})`)(
 		empirePolicy,
-		{ current: 2, since: 0 },
+		{
+			current: 2,
+			since: 0,
+		},
 		() => clock,
 	);
 	planner.observe(2);
@@ -994,7 +1122,11 @@ test("ready transport waits in Empire II for its slot and an unresolved planner 
 	const f = fixture(2, {
 		config: {
 			policies: [
-				{ name: "transport_manager", kind: "transport", enabled: true },
+				{
+					name: "transport_manager",
+					kind: "transport",
+					enabled: true,
+				},
 				empirePolicy,
 			],
 		},
@@ -1014,7 +1146,9 @@ test("ready transport waits in Empire II for its slot and an unresolved planner 
 	const order = w.parseTransportOrder(root, () => clock);
 	agent.stop();
 	const saved = JSON.parse(w.sessionStorage.getItem("mafia-bidi-state-v1"));
-	saved.transport = { order };
+	saved.transport = {
+		order,
+	};
 	w.sessionStorage.setItem("mafia-bidi-state-v1", JSON.stringify(saved));
 	f.config.revision = 2;
 	f.install();

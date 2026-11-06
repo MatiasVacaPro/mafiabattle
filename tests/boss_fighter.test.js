@@ -1,16 +1,13 @@
 import { afterEach, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { Window } from "happy-dom";
+import { loadAgentSource } from "../scripts/agent_source.js";
 
 const helperSource = readFileSync(
 	new URL("../scripts/boss_fighter.js", import.meta.url),
 	"utf8",
 );
-const supervisorSource = readFileSync(
-	new URL("../scripts/supervisor.js", import.meta.url),
-	"utf8",
-);
-const agentSource = `function(config) {${helperSource}; return (${supervisorSource})(config);}`;
+const agentSource = loadAgentSource();
 
 const policy = {
 	hide_obstacles: true,

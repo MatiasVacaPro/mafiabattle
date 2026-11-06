@@ -111,6 +111,13 @@ en `sessionStorage` durante recargas.
 
 ## Módulos
 
+La arquitectura vigente está en [Agente residente modular](docs/architecture/resident-agent.md).
+`scripts/supervisor.js` compone las actividades de `scripts/agent/modules/` y el
+núcleo de `scripts/agent/kernel/`. Producción y tests comparten
+`scripts/agent-manifest.json`. Los defaults y validaciones viven en `modules/`;
+los JSON de configuración contienen los overrides. Consultar la guía antes de
+añadir actividades o leer la configuración sin `load_config()`.
+
 Actualización 2026-10-10: carros y crímenes aprovechan las plazas libres antes del
 gimnasio. **Inicio automático de producción de municiones desactivado** por
 preferencia del usuario; se puede recoger lo acumulado. La producción que ya

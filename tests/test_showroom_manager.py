@@ -11,25 +11,32 @@ from modules.transport_manager import TransportManager
 
 class TestShowroomManagerPolicy(unittest.TestCase):
     def setUp(self):
-        defaults = json.loads((Path(__file__).resolve().parents[1] / "config/bidi-defaults.json").read_text())
+        defaults = load_config(
+            Path(__file__).resolve().parents[1] / "config/bidi-defaults.json"
+        )
         self.settings = defaults["modules"]
 
     def test_default_policy_is_disabled_observe_with_approved_floors(self):
         policies = build_policies(self.settings)
-        showroom = [policy for policy in policies if policy["name"] == "showroom_manager"]
+        showroom = [
+            policy for policy in policies if policy["name"] == "showroom_manager"
+        ]
 
         self.assertEqual(len(showroom), 1)
-        self.assertEqual(showroom[0], {
-            "name": "showroom_manager",
-            "kind": "showroom",
-            "enabled": False,
-            "mode": "observe",
-            "review_seconds": 7200,
-            "preventive_sell_threshold": 215,
-            "hard_limit": 250,
-            "minimum_prices": dict(ShowroomManager.DEFAULTS["minimum_prices"]),
-            "database_path": "runtime/showroom.sqlite3",
-        })
+        self.assertEqual(
+            showroom[0],
+            {
+                "name": "showroom_manager",
+                "kind": "showroom",
+                "enabled": False,
+                "mode": "observe",
+                "review_seconds": 7200,
+                "preventive_sell_threshold": 215,
+                "hard_limit": 250,
+                "minimum_prices": dict(ShowroomManager.DEFAULTS["minimum_prices"]),
+                "database_path": "runtime/showroom.sqlite3",
+            },
+        )
 
     def test_production_config_enables_manage_mode_with_high_end_floors(self):
         cfg = load_config(Path(__file__).resolve().parents[1] / "config/config.json")
@@ -38,37 +45,57 @@ class TestShowroomManagerPolicy(unittest.TestCase):
         self.assertEqual(showroom["mode"], "manage")
         self.assertEqual(showroom["review_seconds"], 7200)
         self.assertEqual(showroom["preventive_sell_threshold"], 215)
-        self.assertEqual(showroom["minimum_prices"], ShowroomManager.DEFAULTS["minimum_prices"])
+        self.assertEqual(
+            showroom["minimum_prices"], ShowroomManager.DEFAULTS["minimum_prices"]
+        )
 
     def test_user_can_override_minimum_for_another_model(self):
-        settings = {**self.settings,
-                    "showroom_manager": {"minimum_prices": {"Custom model": 123456}}}
-        showroom = [policy for policy in build_policies(settings)
-                    if policy["name"] == "showroom_manager"]
+        settings = {
+            **self.settings,
+            "showroom_manager": {"minimum_prices": {"Custom model": 123456}},
+        }
+        showroom = [
+            policy
+            for policy in build_policies(settings)
+            if policy["name"] == "showroom_manager"
+        ]
 
-        self.assertEqual(showroom[0]["minimum_prices"], {
-            **ShowroomManager.DEFAULTS["minimum_prices"],
-            "Custom model": 123456,
-        })
+        self.assertEqual(
+            showroom[0]["minimum_prices"],
+            {
+                **ShowroomManager.DEFAULTS["minimum_prices"],
+                "Custom model": 123456,
+            },
+        )
 
     def test_user_cannot_override_policy_identity(self):
-        settings = {**self.settings, "showroom_manager": {
-            "name": "transport_manager", "kind": "transport"
-        }}
-        showroom = [policy for policy in build_policies(settings)
-                    if policy.get("kind") == "showroom"]
+        settings = {
+            **self.settings,
+            "showroom_manager": {"name": "transport_manager", "kind": "transport"},
+        }
+        showroom = [
+            policy
+            for policy in build_policies(settings)
+            if policy.get("kind") == "showroom"
+        ]
 
         self.assertEqual(len(showroom), 1)
         self.assertEqual(showroom[0]["name"], "showroom_manager")
         self.assertEqual(showroom[0]["kind"], "showroom")
 
     def test_policy_omits_undocumented_user_settings(self):
-        settings = {**self.settings, "showroom_manager": {
-            "enabled": True,
-            "custom_internal_flag": "unexpected",
-        }}
-        showroom = [policy for policy in build_policies(settings)
-                    if policy["name"] == "showroom_manager"]
+        settings = {
+            **self.settings,
+            "showroom_manager": {
+                "enabled": True,
+                "custom_internal_flag": "unexpected",
+            },
+        }
+        showroom = [
+            policy
+            for policy in build_policies(settings)
+            if policy["name"] == "showroom_manager"
+        ]
 
         self.assertTrue(showroom[0]["enabled"])
         self.assertNotIn("custom_internal_flag", showroom[0])
@@ -87,7 +114,9 @@ class TestShowroomManagerPolicy(unittest.TestCase):
         )
 
     def test_load_config_rejects_invalid_showroom_settings(self):
-        base = json.loads((Path(__file__).resolve().parents[1] / "config/bidi-defaults.json").read_text())
+        base = load_config(
+            Path(__file__).resolve().parents[1] / "config/bidi-defaults.json"
+        )
         invalid_cases = [
             {"mode": "invalid"},
             {"review_seconds": 0},

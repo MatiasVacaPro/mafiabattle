@@ -1,0 +1,31 @@
+"""Infrastructure defaults; activity defaults live in modules/*.py."""
+
+DEFAULTS = {
+    "endpoint": "ws://127.0.0.1:9222/session",
+    "target_url": "https://www.mafiabattle.com/es/",
+    "account": "mati792",
+    "account_selector": ".player1_username",
+    "user_pause_seconds": 15,
+    "heartbeat_seconds": 2,
+    "lease_seconds": 30,
+    "tick_ms": 1000,
+    "action_delay_ms": 1200,
+    "ack_timeout_ms": 15000,
+    "command_timeout_seconds": 10,
+    "reconnect_min_seconds": 1,
+    "reconnect_max_seconds": 30,
+    "session_mode": "classic",
+    "marionette_port": 2828,
+    "recovery": {
+        "enabled": True,
+        "city_idle": True,
+        "command_stall_seconds": 60,
+        "dialog_idle_seconds": 15,
+        "dialog_close_timeout_seconds": 15,
+        "dialog_stall_seconds": 60,
+        "minimum_reload_seconds": 300,
+        "stuck_timer_reload": True,
+        "stuck_timer_seconds": 2,
+        "stuck_timer_cooldown_seconds": 60,
+    },
+}

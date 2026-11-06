@@ -1,4 +1,123 @@
-class DistrictCollector:
-    @staticmethod
-    def policy(settings):
-        return {'name': 'barrio_collector', 'kind': 'collector', **settings['district_collector']}
+from modules.base import PolicyModule
+
+
+class DistrictCollector(PolicyModule):
+    KEY = "district_collector"
+    NAME = "barrio_collector"
+    KIND = "collector"
+    DEFAULTS = {
+        "enabled": False,
+        "collectors": [
+            {
+                "id": "moneypress_cash",
+                "selector": "#imperium #moneypress .collect.cash",
+                "capacity_global": "moneypress_capacity",
+                "minimum": 1000,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "empire": 1,
+            },
+            {
+                "id": "tattooshop_cash",
+                "selector": "#imperium #tattooshop .collect.cash",
+                "capacity_global": "tattooshop_capacity",
+                "minimum": 1000,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "empire": 1,
+            },
+            {
+                "id": "nightclub_cash",
+                "selector": "#imperium #nightclub .collect.cash",
+                "capacity_global": "nightclub_capacity",
+                "minimum": 1000,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "empire": 1,
+            },
+            {
+                "id": "redlight_cash",
+                "selector": "#imperium #redlight .collect.cash",
+                "capacity_global": "redlight_capacity",
+                "minimum": 1,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "empire": 1,
+            },
+            {
+                "id": "gemstonesfactory_cash",
+                "selector": "#imperium #gemstonesfactory .collect.cash",
+                "capacity_global": "gemstonesfactory_capacity",
+                "minimum": 1000,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "empire": 1,
+            },
+            {
+                "id": "ammunition_collect",
+                "selector": "#imperium #ammunitionfactory .collect.ammunition",
+                "capacity_global": "ammunitionfactory_capacity",
+                "minimum": 1,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "empire": 1,
+            },
+            {
+                "empire": 2,
+                "minimum": 1000,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "expected_command": "object:collect",
+                "require_server_ack": True,
+                "allow_readback": True,
+                "native_indicator_only": True,
+                "id": "scrapyard_cash",
+                "selector": "#imperium #scrapyard .collect.cash",
+                "capacity_global": "scrapyard_capacity",
+                "require_cash_gain": True,
+            },
+            {
+                "empire": 2,
+                "minimum": 1000,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "expected_command": "object:collect",
+                "require_server_ack": True,
+                "allow_readback": True,
+                "native_indicator_only": True,
+                "id": "mafiabar_cash",
+                "selector": "#imperium #mafiabar .collect.cash",
+                "capacity_global": "mafiabar_cashcapacity",
+                "require_cash_gain": True,
+            },
+            {
+                "empire": 2,
+                "minimum": 1,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "expected_command": "object:collect",
+                "require_server_ack": True,
+                "allow_readback": True,
+                "native_indicator_only": True,
+                "id": "alcohol_transfer",
+                "selector": "#imperium #alcoholfactory .collect.alcohol",
+                "capacity_selector": "#dialog_alcoholfactory .stat_alcohol .progress",
+                "target_capacity_global": "mafiabar_capacity",
+                "target_capacity_selector": "#dialog_mafiabar .stat_alcohol .progress",
+                "minimum_target_space": 50,
+                "upgrade_root": "#dialog_mafiabar",
+            },
+            {
+                "empire": 2,
+                "minimum": 1,
+                "cooldown_seconds": 300,
+                "requires_timer_slot": False,
+                "expected_command": "warehouse:openbox",
+                "require_server_ack": True,
+                "allow_readback": True,
+                "native_indicator_only": True,
+                "id": "warehouse_box",
+                "selector": "#imperium #warehouse .collect.box",
+            },
+        ],
+    }

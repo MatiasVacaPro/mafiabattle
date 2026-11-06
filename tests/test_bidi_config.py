@@ -43,9 +43,11 @@ class BossFighterConfigTest(unittest.TestCase):
             },
         )
 
-        settings = json.loads(self.defaults_path.read_text())["modules"]
+        settings = load_config(self.defaults_path)["modules"]
         policies = build_policies(settings)
-        self.assertEqual(len([policy for policy in policies if policy["kind"] == "boss"]), 1)
+        self.assertEqual(
+            len([policy for policy in policies if policy["kind"] == "boss"]), 1
+        )
 
     def test_shipped_configs_enable_boss_and_align_health_threshold(self):
         defaults = load_config(self.defaults_path)
@@ -55,17 +57,7 @@ class BossFighterConfigTest(unittest.TestCase):
             boss = config["modules"]["boss_fighter"]
             self.assertEqual(
                 boss,
-                {
-                    "enabled": True,
-                    "minimum_health": 120,
-                    "minimum_ammo": 250,
-                    "cooldown_seconds": 2,
-                    "family_min_only_max_level": 4,
-                    "family_scan_seconds": 180,
-                    "hide_obstacles": True,
-                    "enlarge_hitarea": True,
-                    "boss_scale": 0.55,
-                },
+                {**BossFighter.DEFAULTS, "enabled": True},
             )
             resident = resident_config(config)
             boss_policy = next(
@@ -74,9 +66,7 @@ class BossFighterConfigTest(unittest.TestCase):
             self.assertTrue(boss_policy["enabled"])
             self.assertEqual(boss_policy["minimum_health"], 120)
 
-        self.assertEqual(
-            production["modules"]["health_manager"]["trigger_below"], 120
-        )
+        self.assertEqual(production["modules"]["health_manager"]["trigger_below"], 120)
 
     def test_load_config_rejects_invalid_boss_limits(self):
         base = json.loads(self.defaults_path.read_text())
