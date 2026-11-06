@@ -1,0 +1,2 @@
+websockets==17.2
+marionette-driver==3.7.1

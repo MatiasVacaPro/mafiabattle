@@ -1,0 +1,55 @@
+{
+  "state": "RUNNING",
+  "active": null,
+  "issues": {},
+  "history": [
+    {
+      "sequence": 39,
+      "at": 1793656790270,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 40,
+      "at": 1793656791493,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 41,
+      "at": 1793656792845,
+      "module": "criminal_activities",
+      "action": "close_owned_dialog",
+      "id": null
+    },
+    {
+      "sequence": 42,
+      "at": 1793656798999,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 43,
+      "at": 1793656800293,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 44,
+      "at": 1793656801671,
+      "module": "criminal_activities",
+      "action": "close_owned_dialog",
+      "id": null
+    },
+    {
+      "sequence": 45,
+      "at": 1793656802961,
+      "module": "anti_idle",
+      "action": "native_keepalive"
+    }
+  ]
+}

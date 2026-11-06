@@ -24,6 +24,7 @@ wheels/
 captura_pantalla*.png
 debug_*.png
 
-# Plantillas visuales esenciales para OCR y reconocimiento
-!crop_*.png
-!capturas/
+# BiDi runtime and local diagnostics
+runtime/
+logs/
+node_modules/

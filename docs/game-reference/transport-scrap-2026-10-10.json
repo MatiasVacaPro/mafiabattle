@@ -1,0 +1,140 @@
+{
+  "account": "mati792",
+  "captured_at": "2026-10-10T20:22:56.147Z",
+  "current_map": 2,
+  "last_dialog_check_at": "2026-10-10T20:28:53.578Z",
+  "provenance": "own current Empire II and main/subdialogs; no donation, recycle or upgrade executed",
+  "weekly_window_source": "user statement; initial timer of new order not observed",
+  "transport": {
+    "level": 9,
+    "travel_hours": 10,
+    "next_level": 10,
+    "completed_deliveries": 0,
+    "required_deliveries": 2,
+    "upgrade_cash": 27000000,
+    "upgrade_days": 4,
+    "load_deadline_observed_seconds": 24272,
+    "load_deadline_at": "2026-10-11T03:07:28.147Z",
+    "requirements": [
+      {
+        "type": "weed",
+        "required": 1480.5,
+        "unit": "KG",
+        "donated": 0,
+        "owned": 999.66,
+        "capacity": 1000
+      },
+      {
+        "type": "xtc",
+        "required": 267.3,
+        "unit": "KG",
+        "donated": 0,
+        "owned": 164.2,
+        "capacity": 190
+      },
+      {
+        "type": "car",
+        "model": "Land Rover Discovery 4",
+        "model_id": 36,
+        "required": 7,
+        "donated": 0,
+        "owned": null
+      },
+      {
+        "type": "gem",
+        "model": "White Gem",
+        "model_id": 5,
+        "required": 3,
+        "donated": 0,
+        "owned": null
+      }
+    ],
+    "reward": {
+      "cash": 11485000,
+      "diamonds": 12
+    },
+    "feasibility": "not achievable by observed normal XTC production before load deadline; other external supplies not verified",
+    "xtc_production": {
+      "amount_KG": 50,
+      "duration_hours": 5,
+      "start_cash": 50000,
+      "requires_timer_slot": true,
+      "running_in_active_timers": false
+    },
+    "next_11": {
+      "deliveries_at_level10": 2,
+      "upgrade_cash": 30000000,
+      "upgrade_days": 5,
+      "travel_hours": 9
+    }
+  },
+  "scrap": {
+    "level": 4,
+    "completed_recycles": 2,
+    "required_recycles_to_5": 10,
+    "remaining": 8,
+    "recycle_hours": 3,
+    "requires_timer_slot": true,
+    "upgrade_cash": 5000000,
+    "upgrade_days": 5,
+    "theoretical_sequential_minimum_hours": 144,
+    "current_requirements": [
+      {
+        "model": "Rolls-Royce Phantom",
+        "model_id": 46,
+        "required": 1,
+        "donated": 0,
+        "owned": null
+      },
+      {
+        "model": "Cadillac Coupe DeVille",
+        "model_id": 58,
+        "required": 2,
+        "donated": 0,
+        "owned": null
+      },
+      {
+        "model": "Chevrolet Aveo",
+        "model_id": 16,
+        "required": 3,
+        "donated": 0,
+        "owned": null
+      }
+    ],
+    "reward": {
+      "cash": 688764,
+      "diamonds": 0
+    },
+    "passive_cash_per_hour": 17500,
+    "passive_capacity": 570000,
+    "limitations": [
+      "Model inventory not confirmed.",
+      "Can affect tournament/event score.",
+      "Future recipes may differ; time minimum excludes acquisition and waiting for slots."
+    ]
+  },
+  "confirmed_health_cycle": {
+    "before": 94,
+    "after": 404,
+    "spend_cash": 310000,
+    "packs_50": 6,
+    "packs_10": 1,
+    "confirmation": "logs/bot.log: six confirmed gains50 and one10, ending1791663830483"
+  },
+  "sources": [
+    "https://www.mafiabattle.info/transport-company",
+    "https://es.mafiabattle.info/scrap-yard",
+    "https://www.mafiabattle.info/xtc-lab",
+    "https://www.mafiabattle.info/steel-factory"
+  ],
+  "delegation": {
+    "model": "gemini-3.8-flash-high",
+    "transport_conversation": "1f1d537a-c912-46e5-a9c1-5ad3761e2620",
+    "scrap_conversation": "cbec8b06-fef5-4647-9a70-4d753e644c27",
+    "both_status": "SUCCESS",
+    "rejected_suggestions": [
+      "Have all requested resources simultaneously in inventory: requests exceed storage capacity.",
+      "Assume scrap transaction is deficit without real alternative valuations."
+    ]
+  }
+}

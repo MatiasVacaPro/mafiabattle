@@ -1,0 +1,216 @@
+{
+  "date": "2026-11-04",
+  "timezone": "America/Guayaquil",
+  "checks": {
+    "python": 59,
+    "bun": 382,
+    "total": 441,
+    "syntax_and_style": "passed"
+  },
+  "policy": {
+    "home_seconds": 900,
+    "secondary_seconds": 1800
+  },
+  "before": {
+    "state": "RUNNING",
+    "process_running": true,
+    "issues": {
+      "boss_fighter": "Navigation did not complete: #dialog_bosses_bosevent"
+    },
+    "empires": {
+      "current": 1,
+      "since": 1793804892309,
+      "primary_ms": 0,
+      "secondary_ms": 1027703,
+      "last_secondary_duration_ms": 1027703,
+      "last_secondary_visit_at": 1793804892309,
+      "pending": null,
+      "primary_share": 0.3927799100960016,
+      "next_secondary_at": 1793812092309,
+      "reason": "primary_residence",
+      "native_empire": 1,
+      "airport_remaining_seconds": 211,
+      "transition": null
+    },
+    "gym": {
+      "empire": 1,
+      "current_empire": 1,
+      "used_sessions": 5,
+      "maximum_sessions": 10,
+      "timer_active": true,
+      "ready": false
+    },
+    "family_tournament": {
+      "enabled": true,
+      "active": {
+        "family": "boats",
+        "empire": 2
+      },
+      "expires_at": 1794178800559,
+      "next_scan_at": 1793805571628
+    }
+  },
+  "after": {
+    "state": "RUNNING",
+    "process_running": true,
+    "issues": {
+      "boss_fighter": "Navigation did not complete: #dialog_bosses_bosevent"
+    },
+    "empires": {
+      "current": 2,
+      "since": 1793806102147,
+      "primary_ms": 1209838,
+      "secondary_ms": 1027703,
+      "last_secondary_duration_ms": 1027703,
+      "last_secondary_visit_at": 1793804892309,
+      "pending": null,
+      "primary_share": 0.45937220091909525,
+      "next_secondary_at": null,
+      "reason": "family_tournament_visit",
+      "native_empire": 2,
+      "airport_remaining_seconds": 491,
+      "transition": null
+    },
+    "gym": {
+      "empire": 1,
+      "current_empire": 2,
+      "used_sessions": 6,
+      "maximum_sessions": 10,
+      "timer_active": false,
+      "ready": false
+    },
+    "family_tournament": {
+      "enabled": true,
+      "active": {
+        "family": "boats",
+        "empire": 2
+      },
+      "expires_at": 1794178800659,
+      "next_scan_at": 1793806794826
+    }
+  },
+  "live_events": [
+    {
+      "sequence": 1,
+      "at": 1793806090156,
+      "module": "empire_manager",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 2,
+      "at": 1793806091392,
+      "module": "empire_manager",
+      "action": "visit_secondary_empire",
+      "id": "empire_flight_2"
+    },
+    {
+      "sequence": 3,
+      "at": 1793806091690,
+      "module": "empire_manager",
+      "action": "defer_flight_reload_get",
+      "to": 2
+    },
+    {
+      "sequence": 1,
+      "at": 1793806101497,
+      "module": "empire_manager",
+      "action": "dom_updated",
+      "id": "empire_flight_2"
+    },
+    {
+      "sequence": 2,
+      "at": 1793806104047,
+      "module": "empire_manager",
+      "action": "flight_destination_verified",
+      "empire": 2
+    },
+    {
+      "sequence": 3,
+      "at": 1793806104464,
+      "module": "barrio_collector",
+      "action": "collect",
+      "id": "scrapyard_cash"
+    },
+    {
+      "sequence": 4,
+      "at": 1793806105720,
+      "module": "barrio_collector",
+      "action": "collect",
+      "id": "mafiabar_cash"
+    },
+    {
+      "sequence": 5,
+      "at": 1793806106066,
+      "module": "barrio_collector",
+      "action": "dom_updated",
+      "id": "scrapyard_cash"
+    },
+    {
+      "sequence": 6,
+      "at": 1793806106076,
+      "module": "barrio_collector",
+      "action": "dom_updated",
+      "id": "mafiabar_cash"
+    },
+    {
+      "sequence": 7,
+      "at": 1793806106955,
+      "module": "barrio_collector",
+      "action": "collect",
+      "id": "alcohol_transfer"
+    },
+    {
+      "sequence": 8,
+      "at": 1793806107251,
+      "module": "barrio_collector",
+      "action": "dom_updated",
+      "id": "alcohol_transfer"
+    },
+    {
+      "sequence": 18,
+      "at": 1793806120241,
+      "module": "criminal_activities",
+      "action": "sell_boats",
+      "id": "boat_sell_all"
+    },
+    {
+      "sequence": 19,
+      "at": 1793806120686,
+      "module": "criminal_activities",
+      "action": "dom_updated",
+      "id": "boat_sell_all"
+    },
+    {
+      "sequence": 30,
+      "at": 1793806145810,
+      "module": "boss_fighter",
+      "action": "defer_boss_navigation",
+      "failures": 1,
+      "next": 1793806205810
+    },
+    {
+      "sequence": 39,
+      "at": 1793806220975,
+      "module": "boss_fighter",
+      "action": "defer_boss_navigation",
+      "failures": 2,
+      "next": 1793806340975
+    },
+    {
+      "sequence": 12,
+      "at": 1793806375695,
+      "module": "boss_fighter",
+      "action": "defer_boss_navigation",
+      "failures": 3,
+      "next": 1793806675695
+    }
+  ],
+  "review": {
+    "independent_analyses_completed": 2,
+    "final_review": "timeout_300s_not_counted"
+  },
+  "limits": [
+    "Complete natural II-I-II cycle of the new policy not observed in this run; complete cycle verified with controlled DOM."
+  ]
+}

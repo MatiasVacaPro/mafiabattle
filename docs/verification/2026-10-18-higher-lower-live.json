@@ -1,0 +1,164 @@
+{
+  "status": "completed",
+  "version": "1.2.7",
+  "account": "mati792",
+  "pid": 59627,
+  "game_started_at": 1792349287267,
+  "answers": [
+    {
+      "at": 1792349288815,
+      "round": 0,
+      "number": 86,
+      "action": "answer_lower"
+    },
+    {
+      "at": 1792349290076,
+      "round": 1,
+      "number": 10,
+      "action": "answer_higher"
+    },
+    {
+      "at": 1792349291328,
+      "round": 2,
+      "number": 75,
+      "action": "answer_lower"
+    },
+    {
+      "at": 1792349292613,
+      "round": 3,
+      "number": 33,
+      "action": "answer_higher"
+    }
+  ],
+  "settle_to_answer_ms": [],
+  "interruptions": [
+    {
+      "at": 1792349316379,
+      "state": "WAITING_FOR_COMMAND",
+      "paused_until": 0
+    }
+  ],
+  "events": [
+    {
+      "sequence": 1,
+      "at": 1792349287267,
+      "module": "casino_player",
+      "action": "start_higher_lower",
+      "id": "hilo_start"
+    },
+    {
+      "sequence": 2,
+      "at": 1792349287271,
+      "module": "casino_player",
+      "action": "dom_updated",
+      "id": "hilo_start"
+    },
+    {
+      "sequence": 3,
+      "at": 1792349288815,
+      "module": "casino_player",
+      "action": "answer_lower",
+      "id": "hilo_answer",
+      "round": 0,
+      "number": 86
+    },
+    {
+      "sequence": 4,
+      "at": 1792349289576,
+      "module": "casino_player",
+      "action": "dom_updated",
+      "id": "hilo_answer"
+    },
+    {
+      "sequence": 5,
+      "at": 1792349290076,
+      "module": "casino_player",
+      "action": "answer_higher",
+      "id": "hilo_answer",
+      "round": 1,
+      "number": 10
+    },
+    {
+      "sequence": 6,
+      "at": 1792349290928,
+      "module": "casino_player",
+      "action": "dom_updated",
+      "id": "hilo_answer"
+    },
+    {
+      "sequence": 7,
+      "at": 1792349291328,
+      "module": "casino_player",
+      "action": "answer_lower",
+      "id": "hilo_answer",
+      "round": 2,
+      "number": 75
+    },
+    {
+      "sequence": 8,
+      "at": 1792349292087,
+      "module": "casino_player",
+      "action": "dom_updated",
+      "id": "hilo_answer"
+    },
+    {
+      "sequence": 9,
+      "at": 1792349292613,
+      "module": "casino_player",
+      "action": "answer_higher",
+      "id": "hilo_answer",
+      "round": 3,
+      "number": 33
+    },
+    {
+      "sequence": 10,
+      "at": 1792349294943,
+      "module": "casino_player",
+      "action": "dom_updated",
+      "id": "hilo_answer"
+    },
+    {
+      "sequence": 11,
+      "at": 1792349294957,
+      "module": "casino_player",
+      "action": "close_casino_result",
+      "id": "casino_result"
+    },
+    {
+      "sequence": 12,
+      "at": 1792349294959,
+      "module": "casino_player",
+      "action": "dom_updated",
+      "id": "casino_result"
+    },
+    {
+      "sequence": 13,
+      "at": 1792349296284,
+      "module": "casino_player",
+      "action": "close_owned_dialog",
+      "id": null
+    }
+  ],
+  "issues": {},
+  "evidence_mode": "resident_runtime_history_and_native_dom_readback",
+  "readback_started_at": 1792349316378,
+  "readback_completed_at": 1792349316379,
+  "readback_remaining_seconds": 1779,
+  "result_closed_at": 1792349294957,
+  "game_closed_at": 1792349296284,
+  "game_duration_ms": 9017,
+  "response_intervals_ms": [
+    1261,
+    1252,
+    1285
+  ],
+  "installed_source_sha256": "6d08345a77c8e1d8e5b9e480e59284ce6a92b9f09f71035aee218f856c9511b3",
+  "installed_source_matches_disk": true,
+  "native_timer_after_game": {
+    "id": "hilo_start",
+    "loaded": true,
+    "ready": false,
+    "remaining_seconds": 1779,
+    "local_next_due": 1792351087266
+  }
+}

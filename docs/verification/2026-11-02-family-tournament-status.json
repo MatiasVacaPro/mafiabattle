@@ -1,0 +1,201 @@
+{
+  "state": "RUNNING",
+  "process_running": true,
+  "active": null,
+  "issues": {},
+  "family_tournament": {
+    "enabled": true,
+    "active": {
+      "family": "boats",
+      "empire": 2
+    },
+    "expires_at": 1794178799550,
+    "next_scan_at": 1793635780168
+  },
+  "empires": {
+    "current": 2,
+    "since": 1793633961318,
+    "primary_ms": 50357627,
+    "secondary_ms": 2177835,
+    "last_secondary_duration_ms": 1391322,
+    "last_secondary_visit_at": 1793632469417,
+    "pending": null,
+    "primary_share": 0.9272646306503869,
+    "next_secondary_at": null,
+    "reason": "family_tournament_visit",
+    "native_empire": 2,
+    "airport_remaining_seconds": 0,
+    "transition": null
+  },
+  "gym": {
+    "empire": 1,
+    "current_empire": 2,
+    "used_sessions": 10,
+    "maximum_sessions": 10,
+    "timer_active": false,
+    "ready": false
+  },
+  "active_timers": {
+    "used": 9,
+    "max": 9,
+    "free": 0,
+    "entries": [
+      {
+        "label": "Preparing new cheap boats",
+        "remaining_seconds": 81
+      },
+      {
+        "label": "Preparing new cars in the billionaire nightclub",
+        "remaining_seconds": 321
+      },
+      {
+        "label": "Upgrading Oil Field",
+        "remaining_seconds": 47628
+      },
+      {
+        "label": "Upgrading diamond factory",
+        "remaining_seconds": 132711
+      },
+      {
+        "label": "Research at your Research Lab",
+        "remaining_seconds": 134719
+      },
+      {
+        "label": "Research at your Research Lab",
+        "remaining_seconds": 221057
+      },
+      {
+        "label": "Research at your Research Lab",
+        "remaining_seconds": 221094
+      },
+      {
+        "label": "Upgrading Swiss Bank",
+        "remaining_seconds": 289778
+      },
+      {
+        "label": "Upgrading Vault",
+        "remaining_seconds": 289804
+      }
+    ]
+  },
+  "history": [
+    {
+      "sequence": 1,
+      "at": 1793635681853,
+      "module": "production_manager",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 2,
+      "at": 1793635683225,
+      "module": "production_manager",
+      "action": "close_owned_dialog",
+      "id": null
+    },
+    {
+      "sequence": 3,
+      "at": 1793635684468,
+      "module": "production_manager",
+      "action": "close_owned_dialog",
+      "id": null
+    },
+    {
+      "sequence": 4,
+      "at": 1793635685846,
+      "module": "transport_manager",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 5,
+      "at": 1793635687129,
+      "module": "transport_manager",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 6,
+      "at": 1793635688472,
+      "module": "transport_manager",
+      "action": "close_owned_dialog",
+      "id": null
+    },
+    {
+      "sequence": 7,
+      "at": 1793635690473,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 8,
+      "at": 1793635691721,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 9,
+      "at": 1793635692962,
+      "module": "criminal_activities",
+      "action": "perform_boats",
+      "id": "criminal_boats_1"
+    },
+    {
+      "sequence": 10,
+      "at": 1793635693494,
+      "module": "criminal_activities",
+      "action": "dom_updated",
+      "id": "criminal_boats_1"
+    },
+    {
+      "sequence": 11,
+      "at": 1793635709268,
+      "module": "supervisor",
+      "action": "return_to_city",
+      "dialog": "dialog_social"
+    },
+    {
+      "sequence": 12,
+      "at": 1793635710674,
+      "module": "criminal_activities",
+      "action": "close_owned_dialog",
+      "id": null
+    },
+    {
+      "sequence": 13,
+      "at": 1793635711901,
+      "module": "anti_idle",
+      "action": "native_keepalive"
+    },
+    {
+      "sequence": 14,
+      "at": 1793635720319,
+      "module": "barrio_collector",
+      "action": "collect",
+      "id": "scrapyard_cash"
+    },
+    {
+      "sequence": 15,
+      "at": 1793635720570,
+      "module": "barrio_collector",
+      "action": "dom_updated",
+      "id": "scrapyard_cash"
+    },
+    {
+      "sequence": 16,
+      "at": 1793635721611,
+      "module": "barrio_collector",
+      "action": "collect",
+      "id": "mafiabar_cash"
+    },
+    {
+      "sequence": 17,
+      "at": 1793635721870,
+      "module": "barrio_collector",
+      "action": "dom_updated",
+      "id": "mafiabar_cash"
+    }
+  ]
+}

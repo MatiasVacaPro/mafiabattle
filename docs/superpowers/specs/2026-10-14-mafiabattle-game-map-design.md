@@ -1,6 +1,6 @@
 # MafiaBattle: mapa de interfaz y frontend observable
 
-**Estado:** propuesta aprobada en conversación; pendiente de revisión escrita  
+**Estado:** diseño aprobado en conversación el 2026-10-14  
 **Fecha:** 2026-10-14  
 **Proyecto:** MafiaBattle / supervisor BiDi
 

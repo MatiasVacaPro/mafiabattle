@@ -1,0 +1,718 @@
+{
+  "account": "mati792",
+  "player_level": 195,
+  "captured_at": "2026-10-10T20:09:25.526Z",
+  "current_map": 1,
+  "stats_snapshot_at": "2026-10-10T20:05:41.479Z",
+  "stats": {
+    "stats_bank": 13000000,
+    "stats_resource_points": 14,
+    "stats_ammunition": 152594,
+    "stats_cash": 15350235,
+    "stats_health": 184,
+    "stats_timers_max": 8,
+    "stats_mexicanvault": 854432759,
+    "stats_steel": 0,
+    "stats_swissbank": 5000000,
+    "stats_crypto": 0,
+    "stats_timers_vip": 0,
+    "stats_diamonds": 3441,
+    "stats_timers": 8,
+    "stats_boosters": 0,
+    "stats_boosters_max": 5
+  },
+  "health_policy": {
+    "trigger_at_or_below": 100,
+    "refill_to": 400,
+    "maximum_cycle_cash": 400000,
+    "reserve_cash": 100000,
+    "actual_max_health": 453
+  },
+  "empire_I": [
+    {
+      "id": "mafiamansion",
+      "level": 22,
+      "title": "Mafia Mansion Level 22",
+      "progress": [
+        {
+          "label": "stat_troops with_progressbar",
+          "value": "557",
+          "max": "600"
+        }
+      ],
+      "detail": "Troops capacity Mafia power13 452 880 Mansion4 000 000 Troops2 284 585 Weapons7 168 295 The Mafia Mansion will give you the possibility to unlock new in-game possibilities, and it will also increase the capacity level so you can settle more troops in your empire. Upgrading it will increase your Mafia Power! You can also upgrade your troops and equip them with weapons right here in your Mafia Mansion. Upgrade Finish now Cancel Troops Manager Upgrade Finish now Cancel Troops Manager",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "hospital",
+      "level": 19,
+      "title": "Hospital Level 19",
+      "progress": [
+        {
+          "label": "stat_health with_progressbar",
+          "value": "187",
+          "max": "453"
+        }
+      ],
+      "detail": "More in25S Health187 / 453 Recovery speed30 seconds You'll need your health during attacks, so upgrade your Hospital to a higher level for extra health and a faster recovery speed! Note: if your health is too low, performing criminal activities is not always possible. Upgrade Finish now",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "methlab",
+      "level": 20,
+      "title": "Meth Lab Level 20",
+      "progress": [
+        {
+          "label": "stat_meth with_progressbar in_kilo",
+          "value": "34.88",
+          "max": "350"
+        },
+        {
+          "label": "stat_cooking with_progressbar",
+          "value": "60",
+          "max": "60.00"
+        }
+      ],
+      "detail": "Capacity Cooking max quantity Cooking time2 hours Business time! Use your Meth Lab to produce meth and sell for high prices! Getting big money for your meth is all about cooking the perfect batch - the higher the % of purity (blueness) of the meth, the better. But with the needs of drug users changing each week, you need to constantly find the right balance for perfection! Upgrade for improved storage capacity and a reduction in cooking time. Lab Cancel Finish now Results Lab Cancel Finish now",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "ammunitionfactory",
+      "level": 20,
+      "title": "Ammunition Factory Level 20",
+      "progress": [
+        {
+          "label": "stat_ammunition with_progressbar",
+          "value": "0",
+          "max": "5000"
+        },
+        {
+          "label": "stat_clock with_progressbar",
+          "value": "105",
+          "max": "105"
+        }
+      ],
+      "detail": "Capacity Production rate Without ammunition, you're nothing! To be able to attack other players, you need ammunition at your disposal. In order to start the producing process, you should press the \"Produce\" button every 24 hours. Note: during an upgrade your Ammunition Factory will not produce ammunition. And when you're in the course of producing, you also can't upgrade your Ammunition Factory! Produce Cancel",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "moneypress",
+      "level": 19,
+      "title": "Money Press Level 19",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "1710",
+          "max": "4000000"
+        },
+        {
+          "label": "stat_clock with_progressbar",
+          "value": "114000",
+          "max": "86000"
+        }
+      ],
+      "detail": "Capacity1 710 / 4 000 000 Production rate Your Money Press is a lucrative business! It produces tons of cash all the time. But make sure you collect all that money in time, before you get robbed! Upgrading your Money Press ensures it will produce even more cash, and the capacity will also increase! Upgrade Finish now Cancel",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "bank",
+      "level": 17,
+      "title": "Bank Level 17",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "13000000",
+          "max": "13000000"
+        }
+      ],
+      "detail": "Capacity Withdraw MAX Deposit MAX Deposit your cash in the bank to keep it safe while players are attacking you. This is a good choice if you have no current investment opportunities to put your money into. Upgrade your bank to a higher level for more capacity. Upgrade Finish now Cancel Logs",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "carshowroom",
+      "level": 20,
+      "title": "Car Showroom Level 20",
+      "progress": [
+        {
+          "label": "stat_car with_progressbar",
+          "value": "21",
+          "max": "250"
+        }
+      ],
+      "detail": "Next offer04M 10S Capacity21 / 250 New offer5 minutes There's no better place to sell your cars then in your very own Car Showroom! Make sure to upgrade your showroom to allow for more capacity and faster offers. Your followers can also provide great publicity about your showroom. And the more followers you have, the more your customers will be willing to offer you! Offers23",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "bossmansion",
+      "level": 10,
+      "title": "Boss Mansion Level 10",
+      "progress": [
+        {
+          "label": "stat_boss with_progressbar",
+          "value": "3",
+          "max": "58"
+        }
+      ],
+      "detail": "Boss capacity Mafia power3 777 120 Mansion3 600 000 Bosses170 000 Weapons7 120 Welcome in your Boss Mansion! Over here you can view all upcoming boss events, manage your obtained bosses by upgrading them or equip them weapons, or upgrade your Boss Mansion to a higher level for more capacity and extra mafia power. Upgrade Finish now Cancel Boss events Bosses",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "pawnshop",
+      "level": 10,
+      "title": "Pawn Shop Level 10",
+      "progress": [
+        {
+          "label": "stat_sells with_progressbar",
+          "value": "0",
+          "max": "10"
+        },
+        {
+          "label": "stat_offerprice with_progressbar",
+          "value": "75",
+          "max": "75"
+        }
+      ],
+      "detail": "Sell capacity Offer value The Pawn Shop allows you to sell your stuff that you don't need anymore. Make some quick cash on all kind off items! Upgrade your Pawn Shop to sell more items, and to get more value for them. During an upgrade you can't sell any items. Pawn Shop",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "gemstonesfactory",
+      "level": 19,
+      "title": "Gemstones Factory Level 19",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "1590",
+          "max": "4400000"
+        },
+        {
+          "label": "stat_clock with_progressbar",
+          "value": "108000",
+          "max": "80000"
+        }
+      ],
+      "detail": "Capacity1 590 / 4 400 000 Production rate Welcome to your Gemstones Factory! This factory contains an underground gemstone mine, where customers will buy your gemstones all day here. Also, you can collect gemstones yourself. You need them to upgrade your Gemstone Factory, or you can sell them for some extra cash. Upgrade Finish now Cancel Factory1",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "weedfarm",
+      "level": 10,
+      "title": "Weed Farm Level 10 Next offer11M 17S",
+      "progress": [
+        {
+          "label": "stat_weed with_progressbar in_kilo",
+          "value": "999.66",
+          "max": "1000"
+        },
+        {
+          "label": "stat_plants with_progressbar",
+          "value": "11",
+          "max": "12"
+        },
+        {
+          "label": "stat_troops with_progressbar",
+          "value": "50",
+          "max": "50"
+        }
+      ],
+      "detail": "Capacity999.66 / 1 000 KG Plants11 / 12 Corrupt cops50 / 50 This is your Weed Farm. Buy plants and grow them for extra steady cash flow. In order to sell your weed quicker, you can buy the troop type “Corrupt Cop” in the shop. The more Corrupt Cops you have, the more often you’ll receive offers for your weed! Farm",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "redlight",
+      "level": 12,
+      "title": "Red Light District Level 12",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "1",
+          "max": "3200000"
+        },
+        {
+          "label": "stat_girls with_progressbar",
+          "value": "0",
+          "max": "6"
+        }
+      ],
+      "detail": "Capacity1 / 3 200 000 Girls working Welcome in your Red Light District! Your Red Light District is a great place to earn some extra cash. Hire girls and get them to work for you. Upgrade your Red Light District to a higher level so your capacity increases, and of course to unlock new girls! Collect your cash in time to make sure it won’t be robbed by other players! Girls",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "nightclub",
+      "level": 11,
+      "title": "Nightclub Level 11",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "0",
+          "max": "6100000"
+        },
+        {
+          "label": "stat_sells with_progressbar",
+          "value": "46978",
+          "max": "47000"
+        }
+      ],
+      "detail": "Capacity0 / 6 100 000 Stock capacity46 978/47 000 Available rooms5 Are you bored? There is no time to be bored, visit the Nightclub! Over here you can visit different rooms and meet new people. Probably you’re even able to do some business? If you upgrade the Nightclub to a higher level new rooms will become available. Manage your stocks to keep your customers happy and earn more cash. Upgrade Finish now Cancel Rooms Stock",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "researchlab",
+      "level": 21,
+      "title": "Research Lab Level 21",
+      "progress": [
+        {
+          "label": "stat_research_timers with_progressbar",
+          "value": "102",
+          "max": "105"
+        }
+      ],
+      "detail": "Researches completed102 / 105 Your research points14 In the Research Lab you can carry out researches that can help your mafia career. In order to research you need research points or cash, depending on the research you're doing. You can get research points during Family Boss events. Upgrade Finish now Cancel Lab Minigame Activity meter",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "weaponlab",
+      "level": 19,
+      "title": "Weapon Lab Level 19",
+      "progress": [],
+      "detail": "Power capacity110 000 Return investment± 85.00 % Recycling time3 hours Welcome in your Weapon Lab! Have (a lot) of useless weapons, but you want to get rid of them? Here you can recycle your useless weapons into brand new weapons! Upgrade your Weapon Lab to a higher level to get stronger weapons in return. Upgrade Finish now Cancel Lab",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "tattooshop",
+      "level": 20,
+      "title": "Tattoo Shop Level 20",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "0",
+          "max": "4800000"
+        },
+        {
+          "label": "stat_sells with_progressbar",
+          "value": "61982",
+          "max": "62000"
+        }
+      ],
+      "detail": "Capacity0 / 4 800 000 Stock capacity61 982/62 000 Have you ever wanted to run a famous Tattoo Shop? Upgrade this building and Mafiosi from all over the world will pass by, just to get a crazy tattoo or a piercing placed in your Shop! Don't let your stock run empty and keep your customers happy! Stock",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "assemblypoint",
+      "level": 5,
+      "title": "Assembly Point Level 5",
+      "progress": [],
+      "detail": "Received help per upgrade5 Received help duration8 minutes The Assembly Point allows you to meet other members of your family and ask them for help to upgrade buildings in your Empire. Upgrade Finish now Cancel Center",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "cigarfactory",
+      "level": 9,
+      "title": "Cigar Factory Level 9",
+      "progress": [
+        {
+          "label": "stat_tobacco with_progressbar in_kilo",
+          "value": "3.00",
+          "max": "6"
+        },
+        {
+          "label": "stat_cigars with_progressbar",
+          "value": "180",
+          "max": "275"
+        }
+      ],
+      "detail": "Capacity3.00 / 6 KG Cigar capacity180 / 275 New offer3 hours In your Cigar Factory, you can generate the best premium cigars in the world. For that you will need freshly-harvested tobacco, straight from the Family tobacco farm. In addition to that, it is also possible to use the factory as a cover for your illegal business. Upgrade Finish now Cancel Factory",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "lotterykiosk",
+      "level": 10,
+      "title": "Lottery Kiosk Level 10",
+      "progress": [
+        {
+          "label": "stat_tickets with_progressbar",
+          "value": "500",
+          "max": "500"
+        }
+      ],
+      "detail": "Your lottery tickets500 / 500 Available lotteries5 Available scratch cards5 Welcome in the Lottery Kiosk! Participate in stunning lotteries or buy scratch cards for instant luck! Upgrade the Lottery Kiosk to buy more lottery tickets, and to unlock new lottery types and scratch card types. Lotteries Scratch cards",
+      "provenance": "current_map_and_main_dialog"
+    },
+    {
+      "id": "gym",
+      "level": 10,
+      "title": "Gym Level 10",
+      "progress": [
+        {
+          "label": "stat_sessions with_progressbar",
+          "value": "7",
+          "max": "10"
+        }
+      ],
+      "detail": "More in01H 45M Available exercises5 Daily sessions7/10 Mafia power137 453 Welcome in the Gym! Keep yourself in shape and gain extra mafia power by performing training sessions. Failure to work out daily could cause you to lose some power! Exercises",
+      "provenance": "current_map_and_main_dialog"
+    }
+  ],
+  "empire_II": [
+    {
+      "id": "alcoholfactory",
+      "level": 10,
+      "title": "Alcohol Factory Level 10",
+      "progress": [
+        {
+          "label": "stat_alcohol with_progressbar in_liter",
+          "value": "4900",
+          "max": "4900"
+        },
+        {
+          "label": "stat_alcohol with_progressbar quantity",
+          "value": "400",
+          "max": "1600"
+        }
+      ],
+      "detail": "Capacity4 900 / 4 900 L Production rate Welcome inside your Alcohol Factory. Here we’re producing alcohol all the time so we can supply the Mafia Bar with alcohol continuously. Upgrade your Alcohol Factory for a higher production rate and more alcohol storage. Upgrade Finish now Cancel",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "swissbank",
+      "level": 10,
+      "title": "Swiss Bank Level 10",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "5000000",
+          "max": "6000000"
+        }
+      ],
+      "detail": "Capacity Withdraw MAX Deposit MAX Deposit your cash in the Swiss Bank to keep it safe while players are attacking you. Upgrade this to a higher level for more capacity. Attention: on all your transactions the bank takes 3% commission. In return it will pay out 1% interest weekly. Upgrade Finish now Cancel Logs",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "mafiabar",
+      "level": 10,
+      "title": "Mafia Bar Level 10",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "19500",
+          "max": "500000"
+        },
+        {
+          "label": "stat_alcohol with_progressbar in_liter",
+          "value": "4145",
+          "max": "4400"
+        },
+        {
+          "label": "stat_alcohol with_progressbar quantity",
+          "value": "320",
+          "max": "1280"
+        }
+      ],
+      "detail": "Upgrading6D 04H Capacity19 500 / 500 000 Capacity4 145 / 4 400 L Selling rate This is your own Mafia Bar. All Mafia around the world are coming together in your bar and are drinking a lot of alcohol while they’re here. Upgrade your Mafia Bar so you’re able to serve more alcohol and so earn more cash. Each liter sold will generate 75 cash. Upgrade Finish now1 326 Cancel mafiabar_cashcapacity = 375; mafiabar_capacity = 4400;",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "scrapyard",
+      "level": 4,
+      "title": "Scrap Yard Level 4",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "141722",
+          "max": "570000"
+        },
+        {
+          "label": "stat_clock with_progressbar",
+          "value": "17500",
+          "max": "35000"
+        }
+      ],
+      "detail": "Capacity141 722 / 570 000 Production rate Open a new business! Recycle your cars into more useful materials! WATCH OUT: using the Scrap Yard during any mini-tournament, event or family tournament will reduce your score! Upgrade Finish now Cancel Yard Deliver now",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "warehouse",
+      "level": 4,
+      "title": "Warehouse Level 4",
+      "progress": [],
+      "detail": "Upgrading2D 20H New box2 days 3 hours You have built up a respectable reputation and other Mafiosi from all over the world are sending you boxes through your Warehouse! These boxes contain a variety of useful resources. Upgrade Finish now724",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "xtclab",
+      "level": 17,
+      "title": "XTC Lab Level 17",
+      "progress": [
+        {
+          "label": "stat_xtc with_progressbar in_kilo",
+          "value": "164.20",
+          "max": "190"
+        },
+        {
+          "label": "stat_cooking with_progressbar",
+          "value": "50",
+          "max": "70.00"
+        }
+      ],
+      "detail": "Capacity Producing quantity Producing time5 hours Produce XTC in your XTC Lab. Ready for delivery at your transport company, customers will order this product continuously! It's an excellent addition to your business! Upgrade Finish now Cancel Lab Cancel Finish now",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "transportcompany",
+      "level": 9,
+      "title": "Transport Company Level 9",
+      "progress": [],
+      "detail": "Travel time10 hours Your Transport Company is a big enterprise! Important Mafia leaders all over the world are dependent on your resources. That's why you should supply them with their needs at all times, they will respect and reward you. Upgrade Finish now Cancel Warehouse Deliver now",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "diamondfactory",
+      "level": 5,
+      "title": "Diamond Factory Level 5",
+      "progress": [
+        {
+          "label": "stat_diamonds per_hour with_progressbar",
+          "value": "0.79",
+          "max": "1.25"
+        }
+      ],
+      "detail": "Current stock9315 Production rate Run your own Diamond Factory. It will produce a steady amount of diamonds per day. There is no maximum or capacity limit in the Factory. You can collect the current stock of produced diamonds by making a € 4.99 purchase. After payment, the stock will be reset to 100 diamonds. Upgrade Finish now Cancel € 4.99",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "boatcompany",
+      "level": 6,
+      "title": "Boat Company Level 6",
+      "progress": [
+        {
+          "label": "stat_boat with_progressbar",
+          "value": "0",
+          "max": "22"
+        }
+      ],
+      "detail": "Next offer13M 45S Capacity Open offers17 New offer15 minutes Ready to start a new business? Rob boats and sell them at your Boat Company! The more followers you have, the more your customers are willing to offer on boats! Upgrade Finish now Cancel Offers Rob boats",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "mexicanvault",
+      "level": 6,
+      "title": "Vault Level 6",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "854432759",
+          "max": "10000000"
+        },
+        {
+          "label": "stat_security with_progressbar",
+          "value": "16",
+          "max": "16"
+        }
+      ],
+      "detail": "Capacity Max Security Withdraw MAX Deposit MAX Your vault is a storage place for cash. Every day, you will receive interest on top of balance (also above capacity). Watchout: you will only receive interest on money that has been in your Vault for a least one day. There is a downside: anytime of the day, your money can be partially robbed by other families. Buying more security will help you losing less money from robberies. Upgrade Finish now Cancel Logs",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "steelfactory",
+      "level": 0,
+      "title": "Steel Factory Level 0",
+      "progress": [
+        {
+          "label": "stat_steel with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Capacity You will need lots of steel bars to be able to build bulletproof equipment at this factory. Start delivering transports! Upgrade Finish now Cancel Factory",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "heroinlab",
+      "level": 0,
+      "title": "Heroin Lab Level 0",
+      "progress": [
+        {
+          "label": "stat_heroin with_progressbar in_kilo",
+          "value": "0.00",
+          "max": ""
+        },
+        {
+          "label": "stat_cooking with_progressbar",
+          "value": "0",
+          "max": "20.00"
+        }
+      ],
+      "detail": "Capacity Producing quantity Producing time Time to get real! Start producing Heroin. Once you unlock this building you will start finding ingredients that you will need for the production. To keep yourself off the cops radar, export your product through your Moto Club! Upgrade Finish now Lab Cancel Finish now",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "motoclub",
+      "level": 0,
+      "title": "Moto Club Level 0",
+      "progress": [
+        {
+          "label": "stat_moto with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Motorcycles Your Moto Club will be used to export Heroin, and it is also possible to import other resources through it. More motorcycles will give you more delivery opportunities per day. Upgrade Finish now Cancel Deliveries",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "powerbase",
+      "level": 0,
+      "title": "Power Base Level 0",
+      "progress": [
+        {
+          "label": "stat_specialforce with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Special Forces Capacity Mafia power0 Mansion0 Forces0 Weapons0 The Power Base will allow you to contract Special Forces to increase your mafia power. You will have to earn contract XP while committing crimes in several locations in order to start contracts here. Then, you can also upgrade and equip your forces with weapons right here in your Power Base. Upgrade Finish now Cancel Base Manager Contract",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "restaurant",
+      "level": 0,
+      "title": "Restaurant Level 0",
+      "progress": [
+        {
+          "label": "stat_money with_progressbar",
+          "value": "0",
+          "max": ""
+        },
+        {
+          "label": "stat_sells with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Capacity0 / Stock capacity0/ Your own restaurant — a great meeting place for your mafia connections. But also an excellent money laundering opportunity to hide extra illegal businesses! Upgrade Finish now Cancel Stock Deals",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "oilfield",
+      "level": 0,
+      "title": "Oil Field Level 0",
+      "progress": [
+        {
+          "label": "stat_oil with_progressbar in_liter",
+          "value": "0.00",
+          "max": ""
+        },
+        {
+          "label": "stat_oil with_progressbar quantity",
+          "value": "0",
+          "max": "20.00"
+        }
+      ],
+      "detail": "Capacity Drilling quantity Drilling time The world is at your feet, drilling for oil! This very important resource can be distributed through your Transport Company. Upgrade Finish now Cancel Field Cancel Finish now",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "powernet",
+      "level": 0,
+      "title": "Powernet Company Level 0",
+      "progress": [
+        {
+          "label": "stat_powernet with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Maximum power supply for rigs Your Mining Rigs need power supply at all times! Upgrade this building to be able to feed all your rigs at the same time. Upgrade Finish now Cancel",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "mine",
+      "level": 0,
+      "title": "Secret cave Level 0",
+      "progress": [
+        {
+          "label": "stat_chests with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Capacity0 / An excellent way to bring in lots of weapon chests is opening a secret cave that connects the backyard of your restaurant to Mexico. Nobody will notice it. A higher Cave level will guarantee more and faster chests! By paying the Mexican Sinaloa Cartel, you can regularly use the Mexican Route through this tunnel. Upgrade Finish now Cancel Tunnel",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "cryptomining",
+      "level": 0,
+      "title": "Crypto Mining Level 0",
+      "progress": [
+        {
+          "label": "stat_crypto with_progressbar",
+          "value": "0",
+          "max": ""
+        },
+        {
+          "label": "stat_rig with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Capacity0 / Mining Rigs Your Crypto Coins0 Crypto mining is a new trend to generate extra income. You will need electricity from your Powernet and rigs to start mining for Crypto Coins at maximum speed! Use your coins to buy new powerful equipment. Upgrade Finish now Cancel Networkcenter Shop",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "flytipping",
+      "level": 0,
+      "title": "Fly-tipping business Level 0",
+      "progress": [
+        {
+          "label": "stat_garbage with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Capacity0 / Set up this business to dispose toxic waste from your own labs and some other companies. Some clients will reward you big time for helping them out. We found a Landfill site next to the Weed Farm in Empire I to dump the garbage! Upgrade Finish now Cancel Deals",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "repobusiness",
+      "level": 0,
+      "title": "Repo Business Level 0",
+      "progress": [
+        {
+          "label": "stat_repo with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Capacity Open offers New offer Open a Repo Business! Sometimes, customers can't afford to pay their debts, then contractors, banks and governments may hire your legal repossession services to retrieve the unpaid vehicles. But of course you can steal them instead! Upgrade Finish now Cancel Offers Repo jobs",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "stadium",
+      "level": 0,
+      "title": "Stadium Level 0",
+      "progress": [],
+      "detail": "Maximum bet0 Here you can place bets on matches that are going on in the Stadium. Choose the right team and make a fortune! Upgrade Finish now Cancel Gamble room",
+      "provenance": "preloaded_main_dialog"
+    },
+    {
+      "id": "horseracingstadium",
+      "level": 0,
+      "title": "Horse Racing Stadium Level 0",
+      "progress": [
+        {
+          "label": "stat_horses with_progressbar",
+          "value": "0",
+          "max": ""
+        }
+      ],
+      "detail": "Horses Maximum bet in cash0 Maximum bet in diamonds0 Buy your own horses and let them race against others to earn weapons. If you would rather stay low profile, you can also bet on horse races with cash or diamonds. Hopefully you choose the right horse! Upgrade Finish now Cancel Races Stables Market",
+      "provenance": "preloaded_main_dialog"
+    }
+  ],
+  "limitations": [
+    "Empire II was not physically visited during this inspection.",
+    "Level 0 reflects main dialog; unlock requirements not inspected.",
+    "Stats and building readings are snapshots at different times.",
+    "No credentials, cookies or authentication data stored."
+  ]
+}

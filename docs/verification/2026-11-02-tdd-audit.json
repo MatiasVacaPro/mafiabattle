@@ -1,0 +1,58 @@
+{
+  "checks": {
+    "python_pass": 59,
+    "bun_pass": 374,
+    "syntax_and_style": "passed"
+  },
+  "residence": {
+    "before": {
+      "current": 2,
+      "since": 1793657235026,
+      "primary_ms": 0,
+      "secondary_ms": 0,
+      "last_secondary_duration_ms": 0,
+      "last_secondary_visit_at": 0,
+      "pending": null,
+      "primary_share": 0,
+      "next_secondary_at": null,
+      "reason": "family_tournament_visit",
+      "native_empire": 2,
+      "airport_remaining_seconds": 0,
+      "transition": null
+    },
+    "after": {
+      "current": 2,
+      "since": 1793657235026,
+      "primary_ms": 0,
+      "secondary_ms": 0,
+      "last_secondary_duration_ms": 0,
+      "last_secondary_visit_at": 0,
+      "pending": null,
+      "primary_share": 0,
+      "next_secondary_at": null,
+      "reason": "family_tournament_visit",
+      "native_empire": 2,
+      "airport_remaining_seconds": 0,
+      "transition": null
+    },
+    "preserved": true
+  },
+  "live_boat_sales": [
+    {
+      "sequence": 89,
+      "at": 1793657049123,
+      "module": "criminal_activities",
+      "action": "sell_boats",
+      "id": "boat_sell_all"
+    },
+    {
+      "sequence": 90,
+      "at": 1793657049565,
+      "module": "criminal_activities",
+      "action": "dom_updated",
+      "id": "boat_sell_all"
+    }
+  ],
+  "state": "RUNNING",
+  "issues": {}
+}

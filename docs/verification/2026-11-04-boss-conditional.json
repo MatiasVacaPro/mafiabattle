@@ -1,0 +1,50 @@
+{
+  "state": "RUNNING",
+  "process_running": true,
+  "active": null,
+  "issues": {},
+  "boss": {
+    "active_event": false,
+    "boss_name": null,
+    "level": null,
+    "boss_health": 0,
+    "boss_max_health": 5,
+    "infight": false,
+    "defeated": false,
+    "rounds_fought": 0,
+    "levels_cleared": 0
+  },
+  "empires": {
+    "current": 2,
+    "reason": "family_tournament_visit"
+  },
+  "history": [
+    {
+      "sequence": 1,
+      "at": 1793806776154,
+      "module": "anti_idle",
+      "action": "native_keepalive"
+    },
+    {
+      "sequence": 2,
+      "at": 1793806777417,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 3,
+      "at": 1793806778655,
+      "module": "criminal_activities",
+      "action": "open_dialog",
+      "id": null
+    },
+    {
+      "sequence": 4,
+      "at": 1793806779983,
+      "module": "criminal_activities",
+      "action": "close_owned_dialog",
+      "id": null
+    }
+  ]
+}
